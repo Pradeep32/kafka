@@ -29,17 +29,34 @@ jobs:
           docker --version
           docker compose version
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Pre-pull base Kafka image
+        run: docker pull apache/kafka:4.0.0
 
-      - name: Pre-pull required images
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Build enhanced MirrorMaker 2 jar
+        run: ./gradlew :connect:mirror:jar -x test --no-daemon
+
+      - name: Build commit-log-producer image (tagged as pradeep23mishra/commit-log-producer:latest)
         run: |
-          docker pull apache/kafka:4.0.0
-          docker pull pradeep23mishra/enhanced-mm2:latest
-          docker pull pradeep23mishra/commit-log-producer:latest
+          docker build \
+            -f .github/Dockerfile.producer \
+            -t pradeep23mishra/commit-log-producer:latest \
+            .
+
+      - name: Build enhanced-mm2 image (tagged as pradeep23mishra/enhanced-mm2:latest)
+        run: |
+          docker build \
+            -f .github/Dockerfile.mm2 \
+            -t pradeep23mishra/enhanced-mm2:latest \
+            .
+
+      - name: List built images
+        run: docker image ls | grep -E 'pradeep23mishra|apache/kafka'
 
       - name: Run challenge script
         run: |
