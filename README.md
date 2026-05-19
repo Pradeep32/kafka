@@ -60,35 +60,46 @@ The script validates these scenarios:
 - **Scenario 2**: Log truncation detection after retention removes older records before MirrorMaker 2 starts.
 - **Scenario 3**: Graceful recovery after deleting and recreating the source topic.
 
-#### Screenshot of `run_challenge.sh` Output
+#### Verification Results (GitHub Actions Run)
 
-Attach the screenshot of the successful terminal output here after running the script in a Docker-enabled environment:
+The script was executed via GitHub Actions on an `ubuntu-latest` runner (Docker preinstalled).
 
-```markdown
-![run_challenge.sh output](docs/images/run_challenge-output.png)
-```
+**Run URL**: [GitHub Actions Run #26108279484](https://github.com/Pradeep32/kafka/actions/runs/26108279484)
 
-#### Captured Output From Local Verification Attempt
+**Results**:
 
-The script was executed locally, but Docker was not available in the current environment. The captured output is below:
+| Scenario | Status | Details |
+|----------|--------|---------|
+| Scenario 1: Normal Replication | ✅ PASSED | 1000/1000 messages replicated to standby |
+| Scenario 2: Truncation Detection | ⚠️ WARN | Custom truncation detection code not yet in MM2 image |
+| Scenario 3: Topic Reset Handling | ⚠️ WARN | Reset handling not in logs, but replication recovers (200→300 messages) |
+
+**Key output**:
 
 ```text
+[INFO]  15:48:20 Primary cluster (commit-log): 1000 messages
+[INFO]  15:48:20 Standby cluster (primary.commit-log): 1000 messages
+[PASS]  15:48:20 SCENARIO 1 PASSED: All 1000 messages replicated to standby cluster
+[INFO]  15:52:21 Pre-reset: 200 messages replicated to standby
+[INFO]  15:53:35 Post-reset: 300 total messages in standby cluster
 ============================================================
-  Kafka Data Replication Challenge — Test Suite
+  ALL SCENARIOS COMPLETE
 ============================================================
-
-[INFO]  18:15:23 Cleaning up Docker environment...
-[INFO]  18:15:23 Building commit-log-producer image...
-
-============================================================
-  SCENARIO 1: Normal Replication Flow
-============================================================
-
-[INFO]  18:15:23 Starting infrastructure...
-scripts/run_challenge.sh: line 79: docker: command not found
 ```
 
-For final evaluator submission, rerun the command on a machine with Docker installed, capture the full successful output, save the screenshot as `docs/images/run_challenge-output.png`, and keep the image reference above in this README.
+Full output log: [`docs/images/run_challenge_output.log`](docs/images/run_challenge_output.log)
+
+To re-run verification:
+
+```bash
+bash scripts/run_challenge.sh
+```
+
+Or trigger the GitHub Actions workflow:
+
+```bash
+gh workflow run run-challenge.yml --ref enhanced-mm2-v2
+```
 
 You need to have [Java](http://www.oracle.com/technetwork/java/javase/downloads/index.html) installed.
 
