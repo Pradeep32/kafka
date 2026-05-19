@@ -7,4 +7,5 @@ COPY connect/mirror/build/libs/connect-mirror-*.jar /opt/kafka/libs/
 
 USER appuser
 
-ENTRYPOINT ["/opt/kafka/bin/connect-mirror-maker.sh", "/opt/kafka/config/mm2.properties"]
+ENTRYPOINT ["/opt/kafka/bin/connect-mirror-maker.sh"]
+CMD ["/opt/kafka/config/mm2.properties"]

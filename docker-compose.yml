@@ -107,7 +107,7 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./docker/mm2.properties:/opt/kafka/config/mm2.properties:ro
-    command: ["/opt/kafka/bin/connect-mirror-maker.sh", "/opt/kafka/config/mm2.properties"]
+    command: ["/opt/kafka/config/mm2.properties"]
     networks:
       - kafka-network
     restart: on-failure
