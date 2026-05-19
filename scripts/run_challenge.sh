@@ -59,8 +59,8 @@ get_topic_count() {
     local container=$1
     local topic=$2
     docker compose -f "$COMPOSE_FILE" exec -T "$container" \
-        /opt/kafka/bin/kafka-run-class.sh kafka.tools.GetOffsetShell \
-        --broker-list localhost:9092 --topic "$topic" --time -1 2>/dev/null | \
+        /opt/kafka/bin/kafka-get-offsets.sh \
+        --bootstrap-server localhost:9092 --topic "$topic" --time latest 2>/dev/null | \
         awk -F: '{sum += $3} END {print sum+0}'
 }
 
