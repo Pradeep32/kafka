@@ -1,0 +1,366 @@
+
+[0;36m============================================================[0m
+[0;36m  Kafka Data Replication Challenge — Test Suite[0m
+[0;36m============================================================[0m
+
+[0;36m[INFO][0m  15:46:54 Cleaning up Docker environment...
+[0;36m[INFO][0m  15:46:54 Building commit-log-producer image...
+
+[0;36m============================================================[0m
+[0;36m  SCENARIO 1: Normal Replication Flow[0m
+[0;36m============================================================[0m
+
+[0;36m[INFO][0m  15:46:54 Starting infrastructure...
+time="2026-05-19T15:46:54Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Network kafka_kafka-network  Creating
+ Network kafka_kafka-network  Created
+ Container primary-kafka  Creating
+ Container standby-kafka  Creating
+ Container standby-kafka  Created
+ Container primary-kafka  Created
+ Container primary-kafka  Starting
+ Container standby-kafka  Starting
+ Container primary-kafka  Started
+ Container standby-kafka  Started
+[0;36m[INFO][0m  15:47:04 Waiting for Primary Kafka to be ready at localhost:9092...
+[0;36m[INFO][0m  15:47:06 Primary Kafka is ready.
+[0;36m[INFO][0m  15:47:06 Waiting for Standby Kafka to be ready at localhost:9094...
+[0;36m[INFO][0m  15:47:08 Standby Kafka is ready.
+[0;36m[INFO][0m  15:47:08 Creating commit-log topic...
+time="2026-05-19T15:47:08Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container init-topics  Creating
+ Container init-topics  Created
+Attaching to init-topics
+init-topics  | Creating commit-log topic on primary cluster...
+init-topics  | Created topic commit-log.
+init-topics  | Verifying topics on primary...
+init-topics  | commit-log
+init-topics  | Topic initialization complete.
+[Kinit-topics exited with code 0
+[0;36m[INFO][0m  15:47:18 Starting MirrorMaker 2...
+time="2026-05-19T15:47:18Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container mirrormaker2  Creating
+ Container mirrormaker2  Created
+ Container primary-kafka  Waiting
+ Container standby-kafka  Waiting
+ Container primary-kafka  Healthy
+ Container standby-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+ Container init-topics  Waiting
+ Container init-topics  Exited
+ Container mirrormaker2  Starting
+ Container mirrormaker2  Started
+[0;36m[INFO][0m  15:47:38 Producing 1000 messages to commit-log...
+time="2026-05-19T15:47:38Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container standby-kafka  Waiting
+ Container primary-kafka  Waiting
+ Container primary-kafka  Healthy
+ Container standby-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+2026-05-19 15:47:43.956 [main] INFO  c.k.r.producer.CommitLogProducer - Starting Commit Log Producer: count=1000, bootstrapServers=primary-kafka:9092, topic=commit-log
+2026-05-19 15:47:44.847 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 100/1000 messages. Latest offset: 99, partition: 0
+2026-05-19 15:47:45.125 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 200/1000 messages. Latest offset: 199, partition: 0
+2026-05-19 15:47:45.364 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 300/1000 messages. Latest offset: 299, partition: 0
+2026-05-19 15:47:45.574 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 400/1000 messages. Latest offset: 399, partition: 0
+2026-05-19 15:47:45.745 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 500/1000 messages. Latest offset: 499, partition: 0
+2026-05-19 15:47:45.912 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 600/1000 messages. Latest offset: 599, partition: 0
+2026-05-19 15:47:46.122 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 700/1000 messages. Latest offset: 699, partition: 0
+2026-05-19 15:47:46.329 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 800/1000 messages. Latest offset: 799, partition: 0
+2026-05-19 15:47:46.489 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 900/1000 messages. Latest offset: 899, partition: 0
+2026-05-19 15:47:46.648 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 1000/1000 messages. Latest offset: 999, partition: 0
+2026-05-19 15:47:46.649 [main] INFO  c.k.r.producer.CommitLogProducer - Successfully produced all 1000 messages to topic 'commit-log'
+[0;36m[INFO][0m  15:47:46 Waiting 30 seconds for replication to complete...
+[0;36m[INFO][0m  15:48:20 Primary cluster (commit-log): 1000 messages
+[0;36m[INFO][0m  15:48:20 Standby cluster (primary.commit-log): 1000 messages
+[0;32m[PASS][0m  15:48:20 SCENARIO 1 PASSED: All 1000 messages replicated to standby cluster
+[0;36m[INFO][0m  15:48:20 MirrorMaker 2 recent logs:
+time="2026-05-19T15:48:20Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+mirrormaker2  | 	ssl.truststore.type = JKS
+mirrormaker2  | 	value.deserializer = class org.apache.kafka.common.serialization.ByteArrayDeserializer
+mirrormaker2  |  (org.apache.kafka.common.config.AbstractConfig:371)
+mirrormaker2  | [2026-05-19 15:47:32,853] INFO [MirrorSourceConnector|task-0] initializing Kafka metrics collector (org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector:270)
+mirrormaker2  | [2026-05-19 15:47:32,859] INFO [Producer clientId=primary->standby|MirrorSourceConnector-0|offset-syncs-source-producer] Cluster ID: primary-cluster-id-00001 (org.apache.kafka.clients.Metadata:365)
+mirrormaker2  | [2026-05-19 15:47:32,859] INFO [MirrorSourceConnector|task-0] Kafka version: 4.0.0 (org.apache.kafka.common.utils.AppInfoParser:125)
+mirrormaker2  | [2026-05-19 15:47:32,860] INFO [MirrorSourceConnector|task-0] Kafka commitId: 985bc99521dd22bb (org.apache.kafka.common.utils.AppInfoParser:126)
+mirrormaker2  | [2026-05-19 15:47:32,860] INFO [MirrorSourceConnector|task-0] Kafka startTimeMs: 1779205652859 (org.apache.kafka.common.utils.AppInfoParser:127)
+mirrormaker2  | [2026-05-19 15:47:32,877] INFO [MirrorSourceConnector|task-0] [Consumer clientId=primary->standby|MirrorSourceConnector-0|replication-consumer, groupId=null] Assigned to partition(s): commit-log-0, heartbeats-0 (org.apache.kafka.clients.consumer.internals.ClassicKafkaConsumer:611)
+mirrormaker2  | [2026-05-19 15:47:32,877] INFO [MirrorSourceConnector|task-0] Starting with 2 previously uncommitted partitions. (org.apache.kafka.connect.mirror.MirrorSourceTask:207)
+mirrormaker2  | [2026-05-19 15:47:32,878] INFO [MirrorSourceConnector|task-0] task-thread-MirrorSourceConnector-0 replicating 2 topic-partitions primary->standby: [commit-log-0, heartbeats-0]. (org.apache.kafka.connect.mirror.MirrorSourceTask:88)
+mirrormaker2  | [2026-05-19 15:47:32,878] INFO [MirrorSourceConnector|task-0] WorkerSourceTask{id=MirrorSourceConnector-0} Source task finished initialization and start (org.apache.kafka.connect.runtime.AbstractWorkerSourceTask:280)
+mirrormaker2  | [2026-05-19 15:47:32,885] INFO [MirrorSourceConnector|task-0] [Consumer clientId=primary->standby|MirrorSourceConnector-0|replication-consumer, groupId=null] Cluster ID: primary-cluster-id-00001 (org.apache.kafka.clients.Metadata:365)
+mirrormaker2  | [2026-05-19 15:47:32,893] INFO [MirrorSourceConnector|task-0] [Consumer clientId=primary->standby|MirrorSourceConnector-0|replication-consumer, groupId=null] Resetting offset for partition commit-log-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[primary-kafka:9092 (id: 1 rack: null isFenced: false)], epoch=0}}. (org.apache.kafka.clients.consumer.internals.SubscriptionState:447)
+mirrormaker2  | [2026-05-19 15:47:32,893] INFO [MirrorSourceConnector|task-0] [Consumer clientId=primary->standby|MirrorSourceConnector-0|replication-consumer, groupId=null] Resetting offset for partition heartbeats-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[primary-kafka:9092 (id: 1 rack: null isFenced: false)], epoch=0}}. (org.apache.kafka.clients.consumer.internals.SubscriptionState:447)
+mirrormaker2  | [2026-05-19 15:47:32,978] INFO [Producer clientId=primary->standby|MirrorSourceConnector-0|offset-syncs-source-producer] ProducerId set to 0 with epoch 0 (org.apache.kafka.clients.producer.internals.TransactionManager:566)
+mirrormaker2  | [2026-05-19 15:47:42,775] INFO refreshing topics took 17 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-19 15:47:52,770] INFO refreshing topics took 12 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-19 15:48:02,767] INFO refreshing topics took 9 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-19 15:48:12,765] INFO refreshing topics took 7 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+[0;36m[INFO][0m  15:48:20 Cleaning up Docker environment...
+
+[0;36m============================================================[0m
+[0;36m  SCENARIO 2: Log Truncation Detection (Fail-Fast)[0m
+[0;36m============================================================[0m
+
+[0;36m[INFO][0m  15:48:29 Starting infrastructure...
+time="2026-05-19T15:48:29Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Network kafka_kafka-network  Creating
+ Network kafka_kafka-network  Created
+ Container standby-kafka  Creating
+ Container primary-kafka  Creating
+ Container standby-kafka  Created
+ Container primary-kafka  Created
+ Container standby-kafka  Starting
+ Container primary-kafka  Starting
+ Container standby-kafka  Started
+ Container primary-kafka  Started
+[0;36m[INFO][0m  15:48:40 Waiting for Primary Kafka to be ready at localhost:9092...
+[0;36m[INFO][0m  15:48:42 Primary Kafka is ready.
+[0;36m[INFO][0m  15:48:42 Waiting for Standby Kafka to be ready at localhost:9094...
+[0;36m[INFO][0m  15:48:43 Standby Kafka is ready.
+[0;36m[INFO][0m  15:48:43 Creating commit-log topic with 60s retention...
+time="2026-05-19T15:48:43Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container init-topics  Creating
+ Container init-topics  Created
+Attaching to init-topics
+init-topics  | Creating commit-log topic on primary cluster...
+init-topics  | Created topic commit-log.
+init-topics  | Verifying topics on primary...
+init-topics  | commit-log
+init-topics  | Topic initialization complete.
+[Kinit-topics exited with code 0
+[0;36m[INFO][0m  15:48:53 Producing 500 messages...
+time="2026-05-19T15:48:53Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container primary-kafka  Waiting
+ Container standby-kafka  Waiting
+ Container standby-kafka  Healthy
+ Container primary-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+2026-05-19 15:48:57.994 [main] INFO  c.k.r.producer.CommitLogProducer - Starting Commit Log Producer: count=500, bootstrapServers=primary-kafka:9092, topic=commit-log
+2026-05-19 15:48:59.704 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 100/500 messages. Latest offset: 99, partition: 0
+2026-05-19 15:48:59.865 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 200/500 messages. Latest offset: 199, partition: 0
+2026-05-19 15:49:00.091 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 300/500 messages. Latest offset: 299, partition: 0
+2026-05-19 15:49:00.287 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 400/500 messages. Latest offset: 399, partition: 0
+2026-05-19 15:49:00.544 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 500/500 messages. Latest offset: 499, partition: 0
+2026-05-19 15:49:00.546 [main] INFO  c.k.r.producer.CommitLogProducer - Successfully produced all 500 messages to topic 'commit-log'
+[0;36m[INFO][0m  15:49:00 Waiting 90 seconds for log retention to truncate messages...
+[0;36m[INFO][0m  15:49:00 (retention.ms=60000, check interval=10000)
+[0;36m[INFO][0m  15:50:30 Producing 100 more messages after truncation...
+time="2026-05-19T15:50:30Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container standby-kafka  Waiting
+ Container primary-kafka  Waiting
+ Container standby-kafka  Healthy
+ Container primary-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+2026-05-19 15:50:35.812 [main] INFO  c.k.r.producer.CommitLogProducer - Starting Commit Log Producer: count=100, bootstrapServers=primary-kafka:9092, topic=commit-log
+2026-05-19 15:50:36.445 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 100/100 messages. Latest offset: 599, partition: 0
+2026-05-19 15:50:36.446 [main] INFO  c.k.r.producer.CommitLogProducer - Successfully produced all 100 messages to topic 'commit-log'
+[0;36m[INFO][0m  15:50:36 Starting MirrorMaker 2 (should detect truncation)...
+time="2026-05-19T15:50:36Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container mirrormaker2  Creating
+ Container mirrormaker2  Created
+ Container primary-kafka  Waiting
+ Container standby-kafka  Waiting
+ Container primary-kafka  Healthy
+ Container standby-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+ Container init-topics  Waiting
+ Container init-topics  Exited
+ Container mirrormaker2  Starting
+ Container mirrormaker2  Started
+[0;36m[INFO][0m  15:51:12 Checking MirrorMaker 2 logs for truncation detection...
+[1;33m[WARN][0m  15:51:12 SCENARIO 2: Truncation detection not found in logs (may need enhanced MM2 image)
+[0;36m[INFO][0m  15:51:12 MirrorMaker 2 logs (last 30 lines):
+time="2026-05-19T15:51:12Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+mirrormaker2  | 	ssl.keystore.certificate.chain = null
+mirrormaker2  | 	ssl.keystore.key = null
+mirrormaker2  | 	ssl.keystore.location = null
+mirrormaker2  | 	ssl.keystore.password = null
+mirrormaker2  | 	ssl.keystore.type = JKS
+mirrormaker2  | 	ssl.protocol = TLSv1.3
+mirrormaker2  | 	ssl.provider = null
+mirrormaker2  | 	ssl.secure.random.implementation = null
+mirrormaker2  | 	ssl.trustmanager.algorithm = PKIX
+mirrormaker2  | 	ssl.truststore.certificates = null
+mirrormaker2  | 	ssl.truststore.location = null
+mirrormaker2  | 	ssl.truststore.password = null
+mirrormaker2  | 	ssl.truststore.type = JKS
+mirrormaker2  | 	value.deserializer = class org.apache.kafka.common.serialization.ByteArrayDeserializer
+mirrormaker2  |  (org.apache.kafka.common.config.AbstractConfig:371)
+mirrormaker2  | [2026-05-19 15:50:50,151] INFO [MirrorSourceConnector|task-0] initializing Kafka metrics collector (org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector:270)
+mirrormaker2  | [2026-05-19 15:50:50,155] INFO [Producer clientId=primary->standby|MirrorSourceConnector-0|offset-syncs-source-producer] Cluster ID: primary-cluster-id-00001 (org.apache.kafka.clients.Metadata:365)
+mirrormaker2  | [2026-05-19 15:50:50,155] INFO [MirrorSourceConnector|task-0] Kafka version: 4.0.0 (org.apache.kafka.common.utils.AppInfoParser:125)
+mirrormaker2  | [2026-05-19 15:50:50,156] INFO [MirrorSourceConnector|task-0] Kafka commitId: 985bc99521dd22bb (org.apache.kafka.common.utils.AppInfoParser:126)
+mirrormaker2  | [2026-05-19 15:50:50,156] INFO [MirrorSourceConnector|task-0] Kafka startTimeMs: 1779205850155 (org.apache.kafka.common.utils.AppInfoParser:127)
+mirrormaker2  | [2026-05-19 15:50:50,157] INFO [Producer clientId=primary->standby|MirrorSourceConnector-0|offset-syncs-source-producer] ProducerId set to 2 with epoch 0 (org.apache.kafka.clients.producer.internals.TransactionManager:566)
+mirrormaker2  | [2026-05-19 15:50:50,166] INFO [MirrorSourceConnector|task-0] [Consumer clientId=primary->standby|MirrorSourceConnector-0|replication-consumer, groupId=null] Assigned to partition(s): commit-log-0, heartbeats-0 (org.apache.kafka.clients.consumer.internals.ClassicKafkaConsumer:611)
+mirrormaker2  | [2026-05-19 15:50:50,166] INFO [MirrorSourceConnector|task-0] Starting with 2 previously uncommitted partitions. (org.apache.kafka.connect.mirror.MirrorSourceTask:207)
+mirrormaker2  | [2026-05-19 15:50:50,167] INFO [MirrorSourceConnector|task-0] task-thread-MirrorSourceConnector-0 replicating 2 topic-partitions primary->standby: [commit-log-0, heartbeats-0]. (org.apache.kafka.connect.mirror.MirrorSourceTask:88)
+mirrormaker2  | [2026-05-19 15:50:50,167] INFO [MirrorSourceConnector|task-0] WorkerSourceTask{id=MirrorSourceConnector-0} Source task finished initialization and start (org.apache.kafka.connect.runtime.AbstractWorkerSourceTask:280)
+mirrormaker2  | [2026-05-19 15:50:50,173] INFO [MirrorSourceConnector|task-0] [Consumer clientId=primary->standby|MirrorSourceConnector-0|replication-consumer, groupId=null] Cluster ID: primary-cluster-id-00001 (org.apache.kafka.clients.Metadata:365)
+mirrormaker2  | [2026-05-19 15:50:50,180] INFO [MirrorSourceConnector|task-0] [Consumer clientId=primary->standby|MirrorSourceConnector-0|replication-consumer, groupId=null] Resetting offset for partition commit-log-0 to position FetchPosition{offset=500, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[primary-kafka:9092 (id: 1 rack: null isFenced: false)], epoch=0}}. (org.apache.kafka.clients.consumer.internals.SubscriptionState:447)
+mirrormaker2  | [2026-05-19 15:50:50,181] INFO [MirrorSourceConnector|task-0] [Consumer clientId=primary->standby|MirrorSourceConnector-0|replication-consumer, groupId=null] Resetting offset for partition heartbeats-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[primary-kafka:9092 (id: 1 rack: null isFenced: false)], epoch=0}}. (org.apache.kafka.clients.consumer.internals.SubscriptionState:447)
+mirrormaker2  | [2026-05-19 15:51:00,079] INFO refreshing topics took 10 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-19 15:51:10,077] INFO refreshing topics took 8 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+[0;36m[INFO][0m  15:51:12 Cleaning up Docker environment...
+
+[0;36m============================================================[0m
+[0;36m  SCENARIO 3: Graceful Topic Reset Handling[0m
+[0;36m============================================================[0m
+
+[0;36m[INFO][0m  15:51:22 Starting infrastructure...
+time="2026-05-19T15:51:22Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Network kafka_kafka-network  Creating
+ Network kafka_kafka-network  Created
+ Container primary-kafka  Creating
+ Container standby-kafka  Creating
+ Container standby-kafka  Created
+ Container primary-kafka  Created
+ Container primary-kafka  Starting
+ Container standby-kafka  Starting
+ Container primary-kafka  Started
+ Container standby-kafka  Started
+[0;36m[INFO][0m  15:51:32 Waiting for Primary Kafka to be ready at localhost:9092...
+[0;36m[INFO][0m  15:51:34 Primary Kafka is ready.
+[0;36m[INFO][0m  15:51:34 Waiting for Standby Kafka to be ready at localhost:9094...
+[0;36m[INFO][0m  15:51:36 Standby Kafka is ready.
+[0;36m[INFO][0m  15:51:36 Creating commit-log topic...
+time="2026-05-19T15:51:36Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container primary-kafka  Running
+ Container standby-kafka  Running
+ Container init-topics  Creating
+ Container init-topics  Created
+Attaching to init-topics
+init-topics  | Creating commit-log topic on primary cluster...
+init-topics  | Created topic commit-log.
+init-topics  | Verifying topics on primary...
+init-topics  | commit-log
+init-topics  | Topic initialization complete.
+[Kinit-topics exited with code 0
+[0;36m[INFO][0m  15:51:45 Producing 200 initial messages...
+time="2026-05-19T15:51:45Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container primary-kafka  Running
+ Container standby-kafka  Running
+ Container primary-kafka  Waiting
+ Container standby-kafka  Waiting
+ Container primary-kafka  Healthy
+ Container standby-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+2026-05-19 15:51:50.927 [main] INFO  c.k.r.producer.CommitLogProducer - Starting Commit Log Producer: count=200, bootstrapServers=primary-kafka:9092, topic=commit-log
+2026-05-19 15:51:52.918 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 100/200 messages. Latest offset: 99, partition: 0
+2026-05-19 15:51:53.454 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 200/200 messages. Latest offset: 199, partition: 0
+2026-05-19 15:51:53.456 [main] INFO  c.k.r.producer.CommitLogProducer - Successfully produced all 200 messages to topic 'commit-log'
+[0;36m[INFO][0m  15:51:53 Starting MirrorMaker 2...
+time="2026-05-19T15:51:53Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container mirrormaker2  Creating
+ Container mirrormaker2  Created
+ Container standby-kafka  Waiting
+ Container primary-kafka  Waiting
+ Container standby-kafka  Healthy
+ Container primary-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+ Container init-topics  Waiting
+ Container init-topics  Exited
+ Container mirrormaker2  Starting
+ Container mirrormaker2  Started
+[0;36m[INFO][0m  15:52:21 Pre-reset: 200 messages replicated to standby
+[0;36m[INFO][0m  15:52:21 Pausing MirrorMaker 2...
+time="2026-05-19T15:52:21Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container mirrormaker2  Paused
+[0;36m[INFO][0m  15:52:26 Deleting commit-log topic...
+time="2026-05-19T15:52:26Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[0;36m[INFO][0m  15:52:33 Recreating commit-log topic...
+time="2026-05-19T15:52:33Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+Created topic commit-log.
+[0;36m[INFO][0m  15:52:40 Producing 300 new messages to recreated topic...
+time="2026-05-19T15:52:40Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container primary-kafka  Running
+ Container standby-kafka  Running
+ Container standby-kafka  Waiting
+ Container primary-kafka  Waiting
+ Container primary-kafka  Healthy
+ Container standby-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+2026-05-19 15:52:46.489 [main] INFO  c.k.r.producer.CommitLogProducer - Starting Commit Log Producer: count=300, bootstrapServers=primary-kafka:9092, topic=commit-log
+2026-05-19 15:52:47.203 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 100/300 messages. Latest offset: 99, partition: 0
+2026-05-19 15:52:47.337 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 200/300 messages. Latest offset: 199, partition: 0
+2026-05-19 15:52:47.464 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 300/300 messages. Latest offset: 299, partition: 0
+2026-05-19 15:52:47.465 [main] INFO  c.k.r.producer.CommitLogProducer - Successfully produced all 300 messages to topic 'commit-log'
+[0;36m[INFO][0m  15:52:47 Resuming MirrorMaker 2 (should detect topic reset and recover)...
+time="2026-05-19T15:52:47Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container mirrormaker2  Unpaused
+[1;33m[WARN][0m  15:53:17 SCENARIO 3: Reset handling not found in logs (may need enhanced MM2 image)
+[0;36m[INFO][0m  15:53:35 Post-reset: 300 total messages in standby cluster
+[0;36m[INFO][0m  15:53:35 MirrorMaker 2 logs (last 40 lines):
+time="2026-05-19T15:53:35Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+mirrormaker2  | [2026-05-19 15:52:47,652] INFO [Worker clientId=standby->primary, groupId=standby-mm2] Group coordinator primary-kafka:9092 (id: 2147483646 rack: null isFenced: false) is unavailable or invalid due to cause: coordinator unavailable. isDisconnected: false. Rediscovery will be attempted. (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:1000)
+mirrormaker2  | [2026-05-19 15:52:47,653] INFO [Worker clientId=standby->primary, groupId=standby-mm2] Requesting disconnect from last known coordinator primary-kafka:9092 (id: 2147483646 rack: null isFenced: false) (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:1013)
+mirrormaker2  | [2026-05-19 15:52:47,653] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Discovered group coordinator standby-kafka:9092 (id: 2147483646 rack: null isFenced: false) (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:937)
+mirrormaker2  | [2026-05-19 15:52:47,653] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Group coordinator standby-kafka:9092 (id: 2147483646 rack: null isFenced: false) is unavailable or invalid due to cause: coordinator unavailable. isDisconnected: false. Rediscovery will be attempted. (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:1000)
+mirrormaker2  | [2026-05-19 15:52:47,653] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Requesting disconnect from last known coordinator standby-kafka:9092 (id: 2147483646 rack: null isFenced: false) (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:1013)
+mirrormaker2  | [2026-05-19 15:52:47,658] WARN [MirrorSourceConnector|task-0] [Consumer clientId=primary->standby|MirrorSourceConnector-0|replication-consumer, groupId=null] Received inconsistent topic ID error in fetch for partition commit-log-0 (org.apache.kafka.clients.consumer.internals.FetchCollector:345)
+mirrormaker2  | [2026-05-19 15:52:47,661] INFO [MirrorSourceConnector|task-0] [Consumer clientId=primary->standby|MirrorSourceConnector-0|replication-consumer, groupId=null] Resetting the last seen epoch of partition commit-log-0 to 0 since the associated topicId changed from 6TomEjb4SNmNq2kfZjoavg to 5CoYAOgRRUSs0_svpG-XyQ (org.apache.kafka.clients.Metadata:578)
+mirrormaker2  | [2026-05-19 15:52:47,661] WARN [MirrorSourceConnector|task-0] [Consumer clientId=primary->standby|MirrorSourceConnector-0|replication-consumer, groupId=null] Received inconsistent topic ID error in fetch for partition commit-log-0 (org.apache.kafka.clients.consumer.internals.FetchCollector:345)
+mirrormaker2  | [2026-05-19 15:52:47,666] INFO refreshing topics took 21 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-19 15:52:47,677] INFO refreshing topics took 11 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-19 15:52:47,684] INFO refreshing topics took 7 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-19 15:52:47,745] INFO [Worker clientId=standby->primary, groupId=standby-mm2] Discovered group coordinator primary-kafka:9092 (id: 2147483646 rack: null isFenced: false) (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:937)
+mirrormaker2  | [2026-05-19 15:52:47,749] INFO [Worker clientId=standby->primary, groupId=standby-mm2] Attempt to heartbeat with Generation{generationId=6, memberId='standby->primary-c8da2075-1fa5-4379-b5e4-91b54034bb8a', protocol='sessioned'} and group instance id Optional.empty failed due to UNKNOWN_MEMBER_ID, resetting generation (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:1267)
+mirrormaker2  | [2026-05-19 15:52:47,749] INFO [Worker clientId=standby->primary, groupId=standby-mm2] Resetting generation and member id due to: encountered UNKNOWN_MEMBER_ID from HEARTBEAT response (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:1056)
+mirrormaker2  | [2026-05-19 15:52:47,749] INFO [Worker clientId=standby->primary, groupId=standby-mm2] Rebalance started (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:243)
+mirrormaker2  | [2026-05-19 15:52:47,749] INFO [Worker clientId=standby->primary, groupId=standby-mm2] (Re-)joining group (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:605)
+mirrormaker2  | [2026-05-19 15:52:47,751] INFO [Worker clientId=standby->primary, groupId=standby-mm2] (Re-)joining group (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:605)
+mirrormaker2  | [2026-05-19 15:52:47,752] INFO [Worker clientId=standby->primary, groupId=standby-mm2] Successfully joined group with generation Generation{generationId=8, memberId='standby->primary-0de3dae1-4ca4-4c67-b1e9-ee415b275f95', protocol='sessioned'} (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:666)
+mirrormaker2  | [2026-05-19 15:52:47,755] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Discovered group coordinator standby-kafka:9092 (id: 2147483646 rack: null isFenced: false) (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:937)
+mirrormaker2  | [2026-05-19 15:52:47,758] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Attempt to heartbeat with Generation{generationId=6, memberId='primary->standby-3e42a3e5-0f22-4541-ac0e-016281a82d42', protocol='sessioned'} and group instance id Optional.empty failed due to UNKNOWN_MEMBER_ID, resetting generation (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:1267)
+mirrormaker2  | [2026-05-19 15:52:47,758] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Resetting generation and member id due to: encountered UNKNOWN_MEMBER_ID from HEARTBEAT response (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:1056)
+mirrormaker2  | [2026-05-19 15:52:47,759] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Rebalance started (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:243)
+mirrormaker2  | [2026-05-19 15:52:47,759] INFO [Worker clientId=primary->standby, groupId=primary-mm2] (Re-)joining group (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:605)
+mirrormaker2  | [2026-05-19 15:52:47,760] INFO [Worker clientId=primary->standby, groupId=primary-mm2] (Re-)joining group (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:605)
+mirrormaker2  | [2026-05-19 15:52:47,761] INFO [Worker clientId=standby->primary, groupId=standby-mm2] Successfully synced group in generation Generation{generationId=8, memberId='standby->primary-0de3dae1-4ca4-4c67-b1e9-ee415b275f95', protocol='sessioned'} (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:843)
+mirrormaker2  | [2026-05-19 15:52:47,761] INFO [Worker clientId=standby->primary, groupId=standby-mm2] Joined group at generation 8 with protocol version 2 and got assignment: Assignment{error=0, leader='standby->primary-0de3dae1-4ca4-4c67-b1e9-ee415b275f95', leaderUrl='NOTUSED', offset=8, connectorIds=[MirrorCheckpointConnector, MirrorSourceConnector, MirrorHeartbeatConnector], taskIds=[MirrorHeartbeatConnector-0], revokedConnectorIds=[], revokedTaskIds=[], delay=0} with rebalance delay: 0 (org.apache.kafka.connect.runtime.distributed.DistributedHerder:2631)
+mirrormaker2  | [2026-05-19 15:52:47,762] INFO [Worker clientId=standby->primary, groupId=standby-mm2] Starting connectors and tasks using config offset 8 (org.apache.kafka.connect.runtime.distributed.DistributedHerder:1962)
+mirrormaker2  | [2026-05-19 15:52:47,763] INFO [Worker clientId=standby->primary, groupId=standby-mm2] Finished starting connectors and tasks (org.apache.kafka.connect.runtime.distributed.DistributedHerder:1991)
+mirrormaker2  | [2026-05-19 15:52:47,763] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Successfully joined group with generation Generation{generationId=8, memberId='primary->standby-087eca96-54f3-4fa3-8a98-ce8b94b3668e', protocol='sessioned'} (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:666)
+mirrormaker2  | [2026-05-19 15:52:47,771] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Successfully synced group in generation Generation{generationId=8, memberId='primary->standby-087eca96-54f3-4fa3-8a98-ce8b94b3668e', protocol='sessioned'} (org.apache.kafka.connect.runtime.distributed.WorkerCoordinator:843)
+mirrormaker2  | [2026-05-19 15:52:47,772] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Joined group at generation 8 with protocol version 2 and got assignment: Assignment{error=0, leader='primary->standby-087eca96-54f3-4fa3-8a98-ce8b94b3668e', leaderUrl='NOTUSED', offset=9, connectorIds=[MirrorSourceConnector, MirrorCheckpointConnector, MirrorHeartbeatConnector], taskIds=[MirrorSourceConnector-0, MirrorHeartbeatConnector-0], revokedConnectorIds=[], revokedTaskIds=[], delay=0} with rebalance delay: 0 (org.apache.kafka.connect.runtime.distributed.DistributedHerder:2631)
+mirrormaker2  | [2026-05-19 15:52:47,772] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Starting connectors and tasks using config offset 9 (org.apache.kafka.connect.runtime.distributed.DistributedHerder:1962)
+mirrormaker2  | [2026-05-19 15:52:47,772] INFO [Worker clientId=primary->standby, groupId=primary-mm2] Finished starting connectors and tasks (org.apache.kafka.connect.runtime.distributed.DistributedHerder:1991)
+mirrormaker2  | [2026-05-19 15:52:57,602] INFO refreshing topics took 18 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-19 15:53:06,755] INFO [MirrorHeartbeatConnector|task-0|offsets] WorkerSourceTask{id=MirrorHeartbeatConnector-0} Committing offsets for 6 acknowledged messages (org.apache.kafka.connect.runtime.WorkerSourceTask:236)
+mirrormaker2  | [2026-05-19 15:53:07,146] INFO [MirrorHeartbeatConnector|task-0|offsets] WorkerSourceTask{id=MirrorHeartbeatConnector-0} Committing offsets for 5 acknowledged messages (org.apache.kafka.connect.runtime.WorkerSourceTask:236)
+mirrormaker2  | [2026-05-19 15:53:07,591] INFO refreshing topics took 8 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-19 15:53:07,710] INFO [MirrorSourceConnector|task-0|offsets] WorkerSourceTask{id=MirrorSourceConnector-0} Committing offsets for 307 acknowledged messages (org.apache.kafka.connect.runtime.WorkerSourceTask:236)
+mirrormaker2  | [2026-05-19 15:53:17,591] INFO refreshing topics took 7 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-19 15:53:27,591] INFO refreshing topics took 8 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+[0;36m[INFO][0m  15:53:35 Cleaning up Docker environment...
+
+[0;36m============================================================[0m
+[0;36m  ALL SCENARIOS COMPLETE[0m
+[0;36m============================================================[0m
+
+[0;36m[INFO][0m  15:53:44 Review the output above for PASS/FAIL/WARN status of each scenario.
+[0;36m[INFO][0m  15:53:44 For detailed analysis, check container logs with: docker compose logs <service>
