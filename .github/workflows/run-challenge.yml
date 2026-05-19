@@ -1,0 +1,55 @@
+name: Run Replication Challenge
+
+# This workflow runs scripts/run_challenge.sh on a GitHub-hosted Ubuntu runner
+# (which has Docker and docker compose preinstalled) and uploads the captured
+# output as a build artifact. It can be used to capture verification evidence
+# without needing Docker on a local machine.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [enhanced-mm2]
+    paths:
+      - 'scripts/run_challenge.sh'
+      - 'docker-compose.yml'
+      - 'docker/**'
+      - '.github/workflows/run-challenge.yml'
+
+jobs:
+  run-challenge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show Docker versions
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Pre-pull required images
+        run: |
+          docker pull apache/kafka:4.0.0
+          docker pull pradeep23mishra/enhanced-mm2:latest
+          docker pull pradeep23mishra/commit-log-producer:latest
+
+      - name: Run challenge script
+        run: |
+          set -o pipefail
+          bash scripts/run_challenge.sh 2>&1 | tee run_challenge_output.log
+
+      - name: Print final summary tail
+        if: always()
+        run: |
+          echo "===== TAIL OF run_challenge_output.log ====="
+          tail -n 200 run_challenge_output.log || true
+
+      - name: Upload run output log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-challenge-output
+          path: run_challenge_output.log
+          if-no-files-found: warn
