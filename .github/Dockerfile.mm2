@@ -2,15 +2,8 @@ FROM apache/kafka:4.0.0
 
 USER root
 
-# Copy the enhanced MirrorMaker 2 JAR built by Gradle
-COPY connect/mirror/build/libs/connect-mirror-*.jar /tmp/enhanced-connect-mirror.jar
-
-# Merge enhanced classes into the original JAR so the classloader picks them up
-RUN mkdir -p /tmp/classes && \
-    cd /tmp/classes && \
-    jar xf /tmp/enhanced-connect-mirror.jar && \
-    find /opt/kafka/libs -name 'connect-mirror-*.jar' -not -name 'connect-mirror-*test*' -not -name 'connect-mirror-*sources*' | head -1 | xargs -I{} jar uf {} . && \
-    rm -rf /tmp/classes /tmp/enhanced-connect-mirror.jar
+# Copy the merged connect-mirror JAR (enhanced classes merged with original on the runner)
+COPY connect/mirror/build/libs/connect-mirror-*.jar /opt/kafka/libs/
 
 USER appuser
 

@@ -41,6 +41,33 @@ jobs:
       - name: Build enhanced MirrorMaker 2 jar
         run: ./gradlew :connect:mirror:jar -x test --no-daemon
 
+      - name: Merge enhanced MM2 classes into original connect-mirror JAR
+        run: |
+          # Extract original JAR from the Kafka image
+          CONTAINER=$(docker create apache/kafka:4.0.0)
+          ORIGINAL_JAR=$(docker exec "$CONTAINER" find /opt/kafka/libs -name 'connect-mirror-*.jar' -not -name '*test*' -not -name '*sources*' | head -1 | tr -d '\r')
+          docker cp "$CONTAINER:$ORIGINAL_JAR" /tmp/original-connect-mirror.jar
+          docker rm "$CONTAINER"
+          echo "Original JAR: $(stat -c%s /tmp/original-connect-mirror.jar) bytes"
+
+          # Extract enhanced classes
+          ENHANCED_JAR=$(ls connect/mirror/build/libs/connect-mirror-*.jar | head -1)
+          mkdir -p /tmp/merge-classes
+          cd /tmp/merge-classes
+          jar xf "$GITHUB_WORKSPACE/$ENHANCED_JAR"
+          echo "Enhanced classes: $(find . -name '*.class' | wc -l)"
+
+          # Update original JAR with enhanced classes
+          jar uf /tmp/original-connect-mirror.jar .
+          cd "$GITHUB_WORKSPACE"
+          rm -rf /tmp/merge-classes
+
+          # Replace enhanced JAR with merged one
+          rm -f "$ENHANCED_JAR"
+          cp /tmp/original-connect-mirror.jar "$ENHANCED_JAR"
+          rm -f /tmp/original-connect-mirror.jar
+          echo "Merged JAR: $ENHANCED_JAR ($(stat -c%s "$ENHANCED_JAR") bytes)"
+
       - name: Build commit-log-producer image (tagged as pradeep23mishra/commit-log-producer:latest)
         run: |
           docker build \
