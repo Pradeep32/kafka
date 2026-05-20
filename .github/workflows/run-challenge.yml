@@ -43,9 +43,13 @@ jobs:
 
       - name: Merge enhanced MM2 classes into original connect-mirror JAR
         run: |
-          # Extract original JAR from the Kafka image
+          # Extract original JAR path from the Kafka image
+          ORIGINAL_JAR=$(docker run --rm --entrypoint find apache/kafka:4.0.0 \
+            /opt/kafka/libs -name 'connect-mirror-*.jar' -not -name '*test*' -not -name '*sources*' | head -1 | tr -d '\r')
+          echo "Original JAR path: $ORIGINAL_JAR"
+
+          # Copy original JAR out of the image
           CONTAINER=$(docker create apache/kafka:4.0.0)
-          ORIGINAL_JAR=$(docker exec "$CONTAINER" find /opt/kafka/libs -name 'connect-mirror-*.jar' -not -name '*test*' -not -name '*sources*' | head -1 | tr -d '\r')
           docker cp "$CONTAINER:$ORIGINAL_JAR" /tmp/original-connect-mirror.jar
           docker rm "$CONTAINER"
           echo "Original JAR: $(stat -c%s /tmp/original-connect-mirror.jar) bytes"
