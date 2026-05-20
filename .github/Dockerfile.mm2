@@ -2,6 +2,9 @@ FROM apache/kafka:4.0.0
 
 USER root
 
+# Remove the original connect-mirror JAR so the enhanced one takes precedence
+RUN rm -f /opt/kafka/libs/connect-mirror-*.jar
+
 # Copy the enhanced MirrorMaker 2 JAR built by Gradle
 COPY connect/mirror/build/libs/connect-mirror-*.jar /opt/kafka/libs/
 
