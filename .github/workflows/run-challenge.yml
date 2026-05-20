@@ -45,7 +45,7 @@ jobs:
         run: |
           # Extract original JAR path from the Kafka image
           ORIGINAL_JAR=$(docker run --rm --entrypoint find apache/kafka:4.0.0 \
-            /opt/kafka/libs -name 'connect-mirror-*.jar' -not -name '*test*' -not -name '*sources*' | head -1 | tr -d '\r')
+            /opt/kafka/libs -name 'connect-mirror-4*.jar' -not -name '*test*' -not -name '*sources*' -not -name '*client*' | head -1 | tr -d '\r')
           echo "Original JAR path: $ORIGINAL_JAR"
 
           # Copy original JAR out of the image
