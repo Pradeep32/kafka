@@ -126,6 +126,13 @@ scenario_normal_replication() {
 
 # =============================================================================
 # SCENARIO 2: Log Truncation Detection (Fail-Fast)
+#
+# Flow:
+#   1. Produce 500 messages, start MM2 to replicate them (establishes offset tracking)
+#   2. Stop MM2, wait for retention to delete messages
+#   3. Produce 100 more messages (new offsets beyond the gap)
+#   4. Start MM2 again — it tries to resume from offset 500 which is gone
+#   5. Enhanced MM2 detects truncation (earliestOffset > expectedOffset)
 # =============================================================================
 scenario_truncation_detection() {
     log_header "SCENARIO 2: Log Truncation Detection (Fail-Fast)"
@@ -142,44 +149,68 @@ scenario_truncation_detection() {
     docker compose -f "$COMPOSE_FILE" up init-topics
     sleep 5
 
-    # Produce messages
-    log_info "Producing 500 messages..."
+    # Phase 1: Produce messages and let MM2 replicate (establishes offset tracking)
+    log_info "Phase 1: Producing 500 messages..."
     docker compose -f "$COMPOSE_FILE" run --rm commit-log-producer \
         --count 500 --bootstrap-servers primary-kafka:9092 --topic commit-log
 
-    # DO NOT start MM2 yet — let retention kick in
-    log_info "Waiting 90 seconds for log retention to truncate messages..."
+    log_info "Starting MirrorMaker 2 to replicate initial batch..."
+    docker compose -f "$COMPOSE_FILE" up -d mirrormaker2
+    sleep 30
+
+    local phase1_count=$(get_topic_count "standby-kafka" "$REPLICATED_TOPIC")
+    log_info "Phase 1 replication: $phase1_count messages on standby"
+
+    # Stop MM2 to preserve its offset state
+    log_info "Stopping MirrorMaker 2..."
+    docker compose -f "$COMPOSE_FILE" stop mirrormaker2
+    sleep 5
+
+    # Phase 2: Wait for retention to delete the original 500 messages
+    log_info "Phase 2: Waiting 90 seconds for log retention to truncate messages..."
     log_info "(retention.ms=60000, check interval=10000)"
     sleep 90
 
-    # Produce more messages so MM2 has something to see
+    # Produce more messages AFTER truncation (these will have higher offsets)
     log_info "Producing 100 more messages after truncation..."
     docker compose -f "$COMPOSE_FILE" run --rm commit-log-producer \
         --count 100 --bootstrap-servers primary-kafka:9092 --topic commit-log
 
-    # Now start MM2 — it should detect that early offsets are gone
-    log_info "Starting MirrorMaker 2 (should detect truncation)..."
+    # Phase 3: Start MM2 again — it will try to resume from offset 500 which is gone
+    log_info "Phase 3: Starting MirrorMaker 2 (should detect truncation)..."
     docker compose -f "$COMPOSE_FILE" up -d mirrormaker2
     sleep 30
 
     # Check MM2 logs for truncation detection
     log_info "Checking MirrorMaker 2 logs for truncation detection..."
-    local truncation_detected=$(docker compose -f "$COMPOSE_FILE" logs mirrormaker2 2>&1 | grep -c "TRUNCATION\|truncat\|LogTruncationException" || true)
+    local mm2_logs=$(docker compose -f "$COMPOSE_FILE" logs mirrormaker2 2>&1)
+    local truncation_detected=$(echo "$mm2_logs" | grep -c "LOG TRUNCATION DETECTED\|LogTruncationException" || true)
+    local mm2_exit_code=$(docker compose -f "$COMPOSE_FILE" ps -q mirrormaker2 | xargs docker inspect -f '{{.State.ExitCode}}' 2>/dev/null || echo "0")
 
     if [ "$truncation_detected" -gt 0 ]; then
         log_pass "SCENARIO 2 PASSED: Log truncation was detected by MirrorMaker 2"
+    elif [ "$mm2_exit_code" != "0" ]; then
+        log_pass "SCENARIO 2 PASSED: MirrorMaker 2 failed with exit code $mm2_exit_code (fail-fast on truncation)"
     else
-        log_warn "SCENARIO 2: Truncation detection not found in logs (may need enhanced MM2 image)"
+        log_fail "SCENARIO 2 FAILED: Truncation was NOT detected. Check MM2 logs."
     fi
 
-    log_info "MirrorMaker 2 logs (last 30 lines):"
-    docker compose -f "$COMPOSE_FILE" logs --tail=30 mirrormaker2
+    log_info "MirrorMaker 2 logs (last 40 lines):"
+    docker compose -f "$COMPOSE_FILE" logs --tail=40 mirrormaker2
 
     cleanup
 }
 
 # =============================================================================
 # SCENARIO 3: Graceful Topic Reset Handling
+#
+# Flow:
+#   1. Produce 200 messages, start MM2 to replicate (establishes offset tracking)
+#   2. Stop MM2, delete and recreate the source topic
+#   3. Produce 300 new messages to the recreated topic
+#   4. Start MM2 again — it tries to resume from offset 200 which doesn't exist
+#   5. Enhanced MM2 detects topic reset (earliestOffset == 0), seeks to beginning
+#   6. Verify new messages are replicated
 # =============================================================================
 scenario_topic_reset() {
     log_header "SCENARIO 3: Graceful Topic Reset Handling"
@@ -196,24 +227,23 @@ scenario_topic_reset() {
     docker compose -f "$COMPOSE_FILE" up init-topics
     sleep 5
 
-    log_info "Producing 200 initial messages..."
+    # Phase 1: Produce and replicate initial batch
+    log_info "Phase 1: Producing 200 initial messages..."
     docker compose -f "$COMPOSE_FILE" run --rm commit-log-producer \
         --count 200 --bootstrap-servers primary-kafka:9092 --topic commit-log
 
-    # Start MM2 and let it replicate
-    log_info "Starting MirrorMaker 2..."
+    log_info "Starting MirrorMaker 2 to replicate initial batch..."
     docker compose -f "$COMPOSE_FILE" up -d mirrormaker2
-    sleep 20
+    sleep 25
 
     local pre_reset_count=$(get_topic_count "standby-kafka" "$REPLICATED_TOPIC")
     log_info "Pre-reset: $pre_reset_count messages replicated to standby"
 
-    # Pause MM2
-    log_info "Pausing MirrorMaker 2..."
-    docker compose -f "$COMPOSE_FILE" pause mirrormaker2
+    # Phase 2: Stop MM2, delete and recreate topic
+    log_info "Stopping MirrorMaker 2..."
+    docker compose -f "$COMPOSE_FILE" stop mirrormaker2
     sleep 5
 
-    # Delete and recreate the topic
     log_info "Deleting commit-log topic..."
     docker compose -f "$COMPOSE_FILE" exec -T primary-kafka \
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 \
@@ -227,29 +257,34 @@ scenario_topic_reset() {
         --config retention.ms=60000
     sleep 5
 
-    # Produce new messages to the recreated topic
-    log_info "Producing 300 new messages to recreated topic..."
+    # Phase 3: Produce new messages to recreated topic
+    log_info "Phase 3: Producing 300 new messages to recreated topic..."
     docker compose -f "$COMPOSE_FILE" run --rm commit-log-producer \
         --count 300 --bootstrap-servers primary-kafka:9092 --topic commit-log
 
-    # Resume MM2
-    log_info "Resuming MirrorMaker 2 (should detect topic reset and recover)..."
-    docker compose -f "$COMPOSE_FILE" unpause mirrormaker2
+    # Phase 4: Start MM2 — should detect topic reset and recover
+    log_info "Phase 4: Starting MirrorMaker 2 (should detect topic reset and recover)..."
+    docker compose -f "$COMPOSE_FILE" up -d mirrormaker2
     sleep 30
 
-    # Check for recovery in logs
-    local reset_detected=$(docker compose -f "$COMPOSE_FILE" logs mirrormaker2 2>&1 | grep -c "TOPIC RESET\|reset.*recovery\|Resubscrib\|seekToBeginning\|OffsetOutOfRange" || true)
+    # Check for reset detection in logs
+    local mm2_logs=$(docker compose -f "$COMPOSE_FILE" logs mirrormaker2 2>&1)
+    local reset_detected=$(echo "$mm2_logs" | grep -c "TOPIC RESET DETECTED\|Topic reset recovery successful\|resubscrib" || true)
 
     if [ "$reset_detected" -gt 0 ]; then
         log_pass "SCENARIO 3 PASSED: Topic reset was detected and handled gracefully"
     else
-        log_warn "SCENARIO 3: Reset handling not found in logs (may need enhanced MM2 image)"
+        log_fail "SCENARIO 3 FAILED: Reset handling not detected in MM2 logs"
     fi
 
-    # Verify new messages are being replicated
+    # Verify new messages are being replicated after recovery
     sleep 15
     local post_reset_count=$(get_topic_count "standby-kafka" "$REPLICATED_TOPIC")
     log_info "Post-reset: $post_reset_count total messages in standby cluster"
+
+    if [ "$post_reset_count" -gt "$pre_reset_count" ]; then
+        log_pass "SCENARIO 3 PASSED: Replication resumed after topic reset ($pre_reset_count -> $post_reset_count messages)"
+    fi
 
     log_info "MirrorMaker 2 logs (last 40 lines):"
     docker compose -f "$COMPOSE_FILE" logs --tail=40 mirrormaker2

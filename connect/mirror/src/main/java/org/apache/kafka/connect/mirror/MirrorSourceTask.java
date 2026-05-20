@@ -200,7 +200,30 @@ public class MirrorSourceTask extends SourceTask {
                 return sourceRecords;
             }
         } catch (OffsetOutOfRangeException e) {
-            // --- Enhanced: Graceful topic reset handling ---
+            // --- Enhanced: Distinguish truncation from topic reset ---
+            Set<TopicPartition> affectedPartitions = e.offsetOutOfRangePartitions().keySet();
+            Map<TopicPartition, Long> beginningOffsets =
+                    consumer.beginningOffsets(affectedPartitions);
+
+            boolean isTruncation = false;
+            for (TopicPartition tp : affectedPartitions) {
+                long earliestOffset = beginningOffsets.getOrDefault(tp, 0L);
+                long expectedOffset = truncationDetector.getExpectedOffset(tp);
+                if (earliestOffset > 0 && expectedOffset > 0 && earliestOffset > expectedOffset) {
+                    log.error("LOG TRUNCATION DETECTED via OffsetOutOfRangeException on {}: "
+                            + "expected offset={}, earliest available={}", tp, expectedOffset, earliestOffset);
+                    isTruncation = true;
+                }
+            }
+
+            if (isTruncation) {
+                for (TopicPartition tp : affectedPartitions) {
+                    long earliestOffset = beginningOffsets.getOrDefault(tp, 0L);
+                    truncationDetector.checkForTruncation(tp, earliestOffset);
+                }
+            }
+
+            // Otherwise, attempt topic reset recovery
             log.warn("OffsetOutOfRangeException caught during poll. Attempting topic reset recovery.", e);
             boolean recovered = topicResetHandler.handleOffsetOutOfRange(consumer, e, truncationDetector);
             if (recovered) {
