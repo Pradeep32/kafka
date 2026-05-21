@@ -2,6 +2,9 @@ FROM apache/kafka:4.0.0
 
 USER root
 
+# Remove the original connect-mirror JAR so the classloader picks up our enhanced one
+RUN rm -f /opt/kafka/libs/connect-mirror-4*.jar
+
 # Copy the merged connect-mirror JAR (enhanced classes merged with original on the runner)
 COPY connect/mirror/build/libs/connect-mirror-*.jar /opt/kafka/libs/
 
