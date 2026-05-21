@@ -14,6 +14,8 @@ on:
       - 'docker-compose.yml'
       - 'docker/**'
       - '.github/workflows/run-challenge.yml'
+      - '.github/Dockerfile.mm2'
+      - '.github/Dockerfile.producer'
       - 'connect/mirror/src/**'
       - 'README.md'
 
