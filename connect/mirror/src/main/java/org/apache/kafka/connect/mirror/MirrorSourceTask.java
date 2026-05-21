@@ -174,6 +174,26 @@ public class MirrorSourceTask extends SourceTask {
                     truncationDetector.updateExpectedOffset(tp, lastRecord.offset());
                 }
             }
+
+            // --- Enhanced: Detect topic reset via consumer position reset ---
+            // When MM2 is paused/unpaused and the source topic is deleted/recreated,
+            // the consumer may internally reset its position to 0 without throwing
+            // OffsetOutOfRangeException. Detect this by comparing position vs expected.
+            for (TopicPartition tp : consumer.assignment()) {
+                long expectedOffset = truncationDetector.getExpectedOffset(tp);
+                if (expectedOffset > 0) {
+                    long currentPosition = consumer.position(tp);
+                    if (currentPosition == 0) {
+                        log.warn("TOPIC RESET DETECTED via position check on {}: "
+                                + "consumer position is 0 but expected offset was {}. "
+                                + "Topic was likely deleted and recreated while MM2 was paused.",
+                                tp, expectedOffset);
+                        truncationDetector.resetPartition(tp);
+                        topicResetHandler.resubscribeFromBeginning(
+                                consumer, Collections.singleton(tp), truncationDetector);
+                    }
+                }
+            }
             // --- End enhanced truncation detection ---
 
             List<SourceRecord> sourceRecords = new ArrayList<>(records.count());
@@ -307,7 +327,37 @@ public class MirrorSourceTask extends SourceTask {
             long nextOffsetToCommittedOffset = offset + 1L;
             log.trace("Seeking to offset {} for topicPartition: {}", nextOffsetToCommittedOffset, topicPartition);
             consumer.seek(topicPartition, nextOffsetToCommittedOffset);
+
+            // Populate truncation detector with committed offset as baseline
+            truncationDetector.updateExpectedOffset(topicPartition, offset);
         });
+
+        // Check for truncation at startup: if earliest available offset >= expected, fail fast
+        checkStartupTruncation(topicPartitionOffsets);
+    }
+
+    /**
+     * Checks for log truncation at startup by comparing committed offsets
+     * against the earliest available offsets on the source cluster.
+     */
+    private void checkStartupTruncation(Map<TopicPartition, Long> topicPartitionOffsets) {
+        Set<TopicPartition> committedPartitions = topicPartitionOffsets.keySet().stream()
+                .filter(tp -> !isUncommitted(topicPartitionOffsets.get(tp)))
+                .collect(Collectors.toSet());
+
+        if (committedPartitions.isEmpty()) {
+            return;
+        }
+
+        Map<TopicPartition, Long> beginningOffsets = consumer.beginningOffsets(committedPartitions);
+        for (TopicPartition tp : committedPartitions) {
+            long earliestOffset = beginningOffsets.getOrDefault(tp, 0L);
+            if (earliestOffset > 0) {
+                log.info("Startup truncation check for {}: committed={}, earliest={}",
+                        tp, topicPartitionOffsets.get(tp), earliestOffset);
+                truncationDetector.checkForTruncation(tp, earliestOffset);
+            }
+        }
     }
 
     // visible for testing 

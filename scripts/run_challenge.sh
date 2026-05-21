@@ -24,6 +24,11 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Assertion tracking
+FAIL_COUNT=0
+PASS_COUNT=0
+SCENARIO_FAILED=0
+
 log_info()  { echo -e "${CYAN}[INFO]${NC}  $(date '+%H:%M:%S') $*"; }
 log_pass()  { echo -e "${GREEN}[PASS]${NC}  $(date '+%H:%M:%S') $*"; }
 log_fail()  { echo -e "${RED}[FAIL]${NC}  $(date '+%H:%M:%S') $*"; }
@@ -34,6 +39,56 @@ log_header() {
     echo -e "${CYAN}  $*${NC}"
     echo -e "${CYAN}============================================================${NC}"
     echo ""
+}
+
+# Assertion: test passes if condition is true
+assert_pass() {
+    local description="$1"
+    local condition="$2"
+    if eval "$condition"; then
+        log_pass "$description"
+        PASS_COUNT=$((PASS_COUNT + 1))
+        return 0
+    else
+        log_fail "$description"
+        FAIL_COUNT=$((FAIL_COUNT + 1))
+        SCENARIO_FAILED=1
+        return 1
+    fi
+}
+
+# Assertion: test passes if value equals expected
+assert_eq() {
+    local description="$1"
+    local actual="$2"
+    local expected="$3"
+    if [ "$actual" = "$expected" ]; then
+        log_pass "$description (expected: $expected, got: $actual)"
+        PASS_COUNT=$((PASS_COUNT + 1))
+        return 0
+    else
+        log_fail "$description (expected: $expected, got: $actual)"
+        FAIL_COUNT=$((FAIL_COUNT + 1))
+        SCENARIO_FAILED=1
+        return 1
+    fi
+}
+
+# Assertion: test passes if actual >= expected
+assert_ge() {
+    local description="$1"
+    local actual="$2"
+    local expected="$3"
+    if [ "$actual" -ge "$expected" ] 2>/dev/null; then
+        log_pass "$description (expected: >=$expected, got: $actual)"
+        PASS_COUNT=$((PASS_COUNT + 1))
+        return 0
+    else
+        log_fail "$description (expected: >=$expected, got: $actual)"
+        FAIL_COUNT=$((FAIL_COUNT + 1))
+        SCENARIO_FAILED=1
+        return 1
+    fi
 }
 
 wait_for_kafka() {
@@ -109,19 +164,15 @@ scenario_normal_replication() {
     log_info "Primary cluster (commit-log): $primary_count messages"
     log_info "Standby cluster (primary.commit-log): $standby_count messages"
 
-    if [ "$standby_count" -ge 1000 ]; then
-        log_pass "SCENARIO 1 PASSED: All 1000 messages replicated to standby cluster"
-    elif [ "$standby_count" -gt 0 ]; then
-        log_warn "SCENARIO 1 PARTIAL: $standby_count/1000 messages replicated (replication may still be in progress)"
-    else
-        log_fail "SCENARIO 1 FAILED: No messages found in standby cluster"
-    fi
+    SCENARIO_FAILED=0
+    assert_ge "All 1000 messages replicated to standby cluster" "$standby_count" 1000
 
     # Show MM2 logs
     log_info "MirrorMaker 2 recent logs:"
     docker compose -f "$COMPOSE_FILE" logs --tail=20 mirrormaker2
 
     cleanup
+    return $SCENARIO_FAILED
 }
 
 # =============================================================================
@@ -203,20 +254,28 @@ scenario_truncation_detection() {
     local mm2_state=$(docker compose -f "$COMPOSE_FILE" ps mirrormaker2 --format json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('State','unknown'))" 2>/dev/null || echo "unknown")
     log_info "MM2 container state: $mm2_state"
 
+    SCENARIO_FAILED=0
+
+    # Assertion 1: Truncation actually occurred (earliest offset > 0)
+    assert_pass "Log truncation occurred on primary (earliest offset > 0)" \
+        "[ \"$earliest_offset\" -gt 0 ] 2>/dev/null"
+
+    # Assertion 2: MM2 detected truncation via log message or exception
     if [ "$truncation_detected" -gt 0 ]; then
-        log_pass "SCENARIO 2 PASSED: Log truncation was detected by MirrorMaker 2"
+        assert_pass "MM2 logged truncation detection (LOG TRUNCATION DETECTED or LogTruncationException)" \
+            "[ \"$truncation_detected\" -gt 0 ]"
     elif [ "$mm2_state" = "exited" ] || [ "$mm2_state" = "restarting" ]; then
-        log_pass "SCENARIO 2 PASSED: MirrorMaker 2 failed fast on truncation (state: $mm2_state)"
-    elif [ "$earliest_offset" -gt 0 ] 2>/dev/null; then
-        log_warn "SCENARIO 2 PARTIAL: Truncation occurred (earliest=$earliest_offset) but MM2 did not explicitly detect it"
+        assert_pass "MM2 failed fast on truncation (container state: $mm2_state)" \
+            "[ \"$mm2_state\" = \"exited\" ] || [ \"$mm2_state\" = \"restarting\" ]"
     else
-        log_fail "SCENARIO 2 FAILED: Truncation was NOT detected. Check MM2 logs."
+        assert_pass "MM2 detected truncation" "false"
     fi
 
     log_info "MirrorMaker 2 logs (last 40 lines):"
     docker compose -f "$COMPOSE_FILE" logs --tail=40 mirrormaker2
 
     cleanup
+    return $SCENARIO_FAILED
 }
 
 # =============================================================================
@@ -289,25 +348,26 @@ scenario_topic_reset() {
     local mm2_logs=$(docker compose -f "$COMPOSE_FILE" logs mirrormaker2 2>&1)
     local reset_detected=$(echo "$mm2_logs" | grep -c "TOPIC RESET DETECTED\|Topic reset recovery successful\|resubscrib" || true)
 
-    if [ "$reset_detected" -gt 0 ]; then
-        log_pass "SCENARIO 3 PASSED: Topic reset was detected and handled gracefully"
-    else
-        log_fail "SCENARIO 3 FAILED: Reset handling not detected in MM2 logs"
-    fi
+    SCENARIO_FAILED=0
+
+    # Assertion 1: MM2 detected topic reset
+    assert_pass "MM2 detected topic reset (TOPIC RESET DETECTED in logs)" \
+        "[ \"$reset_detected\" -gt 0 ]"
 
     # Verify new messages are being replicated after recovery
     sleep 15
     local post_reset_count=$(get_topic_count "standby-kafka" "$REPLICATED_TOPIC")
     log_info "Post-reset: $post_reset_count total messages in standby cluster"
 
-    if [ "$post_reset_count" -gt "$pre_reset_count" ]; then
-        log_pass "SCENARIO 3 PASSED: Replication resumed after topic reset ($pre_reset_count -> $post_reset_count messages)"
-    fi
+    # Assertion 2: Replication resumed after topic reset
+    assert_pass "Replication resumed after topic reset ($pre_reset_count -> $post_reset_count messages)" \
+        "[ \"$post_reset_count\" -gt \"$pre_reset_count\" ]"
 
     log_info "MirrorMaker 2 logs (last 40 lines):"
     docker compose -f "$COMPOSE_FILE" logs --tail=40 mirrormaker2
 
     cleanup
+    return $SCENARIO_FAILED
 }
 
 # =============================================================================
@@ -323,14 +383,25 @@ main() {
     log_info "Building commit-log-producer image..."
     docker compose -f "$COMPOSE_FILE" build commit-log-producer 2>/dev/null || true
 
+    local overall_failed=0
+
     # Run all scenarios
-    scenario_normal_replication
-    scenario_truncation_detection
-    scenario_topic_reset
+    scenario_normal_replication || overall_failed=1
+    scenario_truncation_detection || overall_failed=1
+    scenario_topic_reset || overall_failed=1
 
     log_header "ALL SCENARIOS COMPLETE"
-    log_info "Review the output above for PASS/FAIL/WARN status of each scenario."
-    log_info "For detailed analysis, check container logs with: docker compose logs <service>"
+    echo ""
+    echo -e "  Assertions: ${GREEN}${PASS_COUNT} passed${NC}, ${RED}${FAIL_COUNT} failed${NC}"
+    echo ""
+
+    if [ "$overall_failed" -eq 1 ] || [ "$FAIL_COUNT" -gt 0 ]; then
+        log_fail "ONE OR MORE SCENARIOS FAILED. Check output above for details."
+        exit 1
+    else
+        log_pass "ALL SCENARIOS PASSED SUCCESSFULLY."
+        exit 0
+    fi
 }
 
 main "$@"

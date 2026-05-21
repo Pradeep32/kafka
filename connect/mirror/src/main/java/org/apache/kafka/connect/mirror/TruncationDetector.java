@@ -66,7 +66,7 @@ public class TruncationDetector {
             return;
         }
 
-        if (earliestAvailableOffset > expectedOffset) {
+        if (earliestAvailableOffset >= expectedOffset && expectedOffset > 0) {
             long gapSize = earliestAvailableOffset - expectedOffset;
             String message = String.format(
                     "LOG TRUNCATION DETECTED on %s: expected next offset=%d, but earliest available offset=%d. "
