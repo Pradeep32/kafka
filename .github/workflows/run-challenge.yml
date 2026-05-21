@@ -8,12 +8,14 @@ name: Run Replication Challenge
 on:
   workflow_dispatch:
   push:
-    branches: [enhanced-mm2]
+    branches: [enhanced-mm2, pr-1]
     paths:
       - 'scripts/run_challenge.sh'
       - 'docker-compose.yml'
       - 'docker/**'
       - '.github/workflows/run-challenge.yml'
+      - 'connect/mirror/src/**'
+      - 'README.md'
 
 jobs:
   run-challenge:
