@@ -77,8 +77,8 @@ jobs:
 
           # Place merged JAR where the Dockerfile expects it
           mkdir -p connect/mirror/build/libs
-          cp /tmp/merged-connect-mirror.jar connect/mirror/build/libs/
-          echo "Merged JAR: $(stat -c%s connect/mirror/build/libs/*.jar) bytes"
+          cp /tmp/merged-connect-mirror.jar connect/mirror/build/libs/connect-mirror-4.0.0.jar
+          echo "Merged JAR: $(stat -c%s connect/mirror/build/libs/connect-mirror-4.0.0.jar) bytes"
 
           # Clean up
           rm -rf /tmp/kafka-libs /tmp/enhanced-classes /tmp/merged-connect-mirror.jar
