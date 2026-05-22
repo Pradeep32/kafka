@@ -63,7 +63,7 @@ jobs:
           mkdir -p /tmp/merge-classes
           cd /tmp/merge-classes
           # Extract only the specific classes we modified/added
-          for cls in TruncationDetector TopicResetHandler LogTruncationException MirrorSourceTask; do
+          for cls in TruncationDetector TopicResetHandler LogTruncationException MirrorSourceTask MirrorSourceLegacyMetrics; do
             jar xf "$GITHUB_WORKSPACE/$ENHANCED_JAR" "org/apache/kafka/connect/mirror/${cls}.class" "org/apache/kafka/connect/mirror/${cls}\$*.class" 2>/dev/null || true
           done
           echo "Enhanced classes to merge:"
