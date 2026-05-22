@@ -58,14 +58,18 @@ jobs:
           docker rm "$CONTAINER"
           echo "Original JAR: $(stat -c%s /tmp/original-connect-mirror.jar) bytes"
 
-          # Extract enhanced classes
+          # Extract ONLY our enhanced classes from the built JAR (not all 4.4.0-SNAPSHOT classes)
           ENHANCED_JAR=$(ls connect/mirror/build/libs/connect-mirror-*.jar | head -1)
           mkdir -p /tmp/merge-classes
           cd /tmp/merge-classes
-          jar xf "$GITHUB_WORKSPACE/$ENHANCED_JAR"
-          echo "Enhanced classes: $(find . -name '*.class' | wc -l)"
+          # Extract only the specific classes we modified/added
+          for cls in TruncationDetector TopicResetHandler LogTruncationException MirrorSourceTask; do
+            jar xf "$GITHUB_WORKSPACE/$ENHANCED_JAR" "org/apache/kafka/connect/mirror/${cls}.class" "org/apache/kafka/connect/mirror/${cls}\$*.class" 2>/dev/null || true
+          done
+          echo "Enhanced classes to merge:"
+          find . -name '*.class' | sort
 
-          # Update original JAR with enhanced classes
+          # Update original JAR with ONLY our enhanced classes
           jar uf /tmp/original-connect-mirror.jar .
           cd "$GITHUB_WORKSPACE"
           rm -rf /tmp/merge-classes
