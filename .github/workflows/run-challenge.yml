@@ -64,7 +64,7 @@ jobs:
             connect/mirror/src/main/java/org/apache/kafka/connect/mirror/TruncationDetector.java \
             connect/mirror/src/main/java/org/apache/kafka/connect/mirror/TopicResetHandler.java \
             connect/mirror/src/main/java/org/apache/kafka/connect/mirror/LogTruncationException.java \
-            .github/EnhancedMirrorSourceTask.java
+            .github/patches/org/apache/kafka/connect/mirror/MirrorSourceTask.java
 
           echo "Compiled classes:"
           find /tmp/enhanced-classes -name '*.class' | sort

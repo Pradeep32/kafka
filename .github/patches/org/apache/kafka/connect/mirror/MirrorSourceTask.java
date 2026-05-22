@@ -37,13 +37,14 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
-/** Replicates a set of topic-partitions with enhanced truncation detection and topic reset handling. */
+/** Replicates a set of topic-partitions with truncation detection and topic reset handling. */
 public class MirrorSourceTask extends SourceTask {
 
     private static final Logger log = LoggerFactory.getLogger(MirrorSourceTask.class);
@@ -56,8 +57,8 @@ public class MirrorSourceTask extends SourceTask {
     private boolean stopping = false;
     private Semaphore consumerAccess;
     private OffsetSyncWriter offsetSyncWriter;
-    private TruncationDetector truncationDetector = new TruncationDetector();
-    private TopicResetHandler topicResetHandler = new TopicResetHandler();
+    private final TruncationDetector truncationDetector = new TruncationDetector();
+    private final TopicResetHandler topicResetHandler = new TopicResetHandler();
 
     public MirrorSourceTask() {}
 
@@ -76,7 +77,7 @@ public class MirrorSourceTask extends SourceTask {
     @Override
     public void start(Map<String, String> props) {
         MirrorSourceTaskConfig config = new MirrorSourceTaskConfig(props);
-        consumerAccess = new Semaphore(1);  // let one thread at a time access the consumer
+        consumerAccess = new Semaphore(1);
         sourceClusterAlias = config.sourceClusterAlias();
         metrics = config.metrics();
         pollTimeout = config.consumerPollTimeout();
@@ -108,14 +109,14 @@ public class MirrorSourceTask extends SourceTask {
         try {
             consumerAccess.acquire();
         } catch (InterruptedException e) {
-            log.warn("Interrupted waiting for access to consumer. Will try closing anyway."); 
+            log.warn("Interrupted waiting for access to consumer. Will try closing anyway.");
         }
         Utils.closeQuietly(consumer, "source consumer");
         Utils.closeQuietly(offsetSyncWriter, "offset sync writer");
         Utils.closeQuietly(metrics, "metrics");
         log.info("Stopping {} took {} ms.", Thread.currentThread().getName(), System.currentTimeMillis() - start);
     }
-   
+
     @Override
     public String version() {
         return new MirrorSourceConnector().version();
@@ -138,48 +139,28 @@ public class MirrorSourceTask extends SourceTask {
                 TopicPartition topicPartition = new TopicPartition(converted.topic(), converted.kafkaPartition());
                 metrics.recordAge(topicPartition, System.currentTimeMillis() - record.timestamp());
                 metrics.recordBytes(topicPartition, byteSize(record.value()));
+
+                // Track expected offset for truncation/reset detection
+                TopicPartition sourceTp = new TopicPartition(record.topic(), record.partition());
+                truncationDetector.updateExpectedOffset(sourceTp, record.offset());
             }
             if (sourceRecords.isEmpty()) {
+                // Check for topic reset on empty poll: if consumer position is 0 but
+                // we expected a higher offset, the topic was likely deleted and recreated
+                checkForTopicReset();
                 return null;
             } else {
                 log.trace("Polled {} records from {}.", sourceRecords.size(), records.partitions());
-
-                // Check for topic reset: if consumer position is behind expected offset,
-                // the topic was deleted and recreated while MM2 was paused
-                for (TopicPartition tp : consumer.assignment()) {
-                    long position = consumer.position(tp);
-                    long expectedOffset = truncationDetector.expectedOffset(tp);
-                    if (expectedOffset > 0 && position < expectedOffset) {
-                        log.warn("TOPIC RESET DETECTED for {}: consumer position {} < expected offset {}. "
-                                + "Topic was likely deleted and recreated. Resetting to earliest.",
-                                tp, position, expectedOffset);
-                        topicResetHandler.handleTopicReset(tp);
-                        consumer.seekToBeginning(java.util.Collections.singleton(tp));
-                        truncationDetector.resetExpectedOffset(tp);
-                    }
-                }
-
                 return sourceRecords;
             }
         } catch (WakeupException e) {
             return null;
         } catch (OffsetOutOfRangeException e) {
-            // Handle offset out of range - could be due to log truncation
-            Map<TopicPartition, Long> outOfRangePartitions = e.offsetOutOfRangePartitions();
-            if (outOfRangePartitions != null && !outOfRangePartitions.isEmpty()) {
-                for (Map.Entry<TopicPartition, Long> entry : outOfRangePartitions.entrySet()) {
-                    TopicPartition tp = entry.getKey();
-                    long requestedOffset = entry.getValue();
-                    Map<TopicPartition, Long> beginningOffsets = consumer.beginningOffsets(
-                            java.util.Collections.singleton(tp));
-                    long earliestOffset = beginningOffsets.getOrDefault(tp, 0L);
-                    log.warn("OffsetOutOfRangeException for {}: requested offset {}, earliest available {}",
-                            tp, requestedOffset, earliestOffset);
-                    truncationDetector.checkForTruncation(tp, earliestOffset);
-                    // If no exception thrown, seek to beginning
-                    consumer.seekToBeginning(java.util.Collections.singleton(tp));
-                    truncationDetector.resetExpectedOffset(tp);
-                }
+            // Use TopicResetHandler to recover (it will throw LogTruncationException if truncation detected)
+            log.warn("OffsetOutOfRangeException in poll: {}", e.offsetOutOfRangePartitions());
+            boolean recovered = topicResetHandler.handleOffsetOutOfRange(consumer, e, truncationDetector);
+            if (!recovered) {
+                throw e;
             }
             return null;
         } catch (KafkaException e) {
@@ -192,7 +173,30 @@ public class MirrorSourceTask extends SourceTask {
             consumerAccess.release();
         }
     }
- 
+
+    private void checkForTopicReset() {
+        for (TopicPartition tp : consumer.assignment()) {
+            long expected = truncationDetector.getExpectedOffset(tp);
+            if (expected <= 0) continue;
+            try {
+                Map<TopicPartition, Long> beginningOffsets =
+                        consumer.beginningOffsets(Collections.singleton(tp));
+                long earliest = beginningOffsets.getOrDefault(tp, 0L);
+                Map<TopicPartition, Long> endOffsets =
+                        consumer.endOffsets(Collections.singleton(tp));
+                long end = endOffsets.getOrDefault(tp, 0L);
+                if (topicResetHandler.isTopicReset(tp, earliest, expected) && end < expected) {
+                    log.warn("TOPIC RESET DETECTED for {}: earliest=0, end={}, expected={}. "
+                            + "Resubscribing from beginning.", tp, end, expected);
+                    topicResetHandler.resubscribeFromBeginning(consumer,
+                            Collections.singleton(tp), truncationDetector);
+                }
+            } catch (Exception ex) {
+                log.debug("Could not check topic reset for {}: {}", tp, ex.getMessage());
+            }
+        }
+    }
+
     @Override
     public void commitRecord(SourceRecord record, RecordMetadata metadata) {
         if (stopping) {
@@ -218,7 +222,7 @@ public class MirrorSourceTask extends SourceTask {
             offsetSyncWriter.firePendingOffsetSyncs();
         }
     }
- 
+
     private Map<TopicPartition, Long> loadOffsets(Set<TopicPartition> topicPartitions) {
         return topicPartitions.stream().collect(Collectors.toMap(x -> x, this::loadOffset));
     }
@@ -244,34 +248,33 @@ public class MirrorSourceTask extends SourceTask {
             long nextOffsetToCommittedOffset = offset + 1L;
             log.trace("Seeking to offset {} for topicPartition: {}", nextOffsetToCommittedOffset, topicPartition);
             consumer.seek(topicPartition, nextOffsetToCommittedOffset);
+            // Seed truncation detector with committed offset
             truncationDetector.updateExpectedOffset(topicPartition, offset);
         });
 
-        // Check for truncation at startup
-        checkStartupTruncation(topicPartitionOffsets);
-    }
-
-    private void checkStartupTruncation(Map<TopicPartition, Long> topicPartitionOffsets) {
-        Set<TopicPartition> committedPartitions = topicPartitionOffsets.keySet().stream()
-                .filter(tp -> !isUncommitted(topicPartitionOffsets.get(tp)))
+        // Startup truncation check: if earliest offset > committed offset, truncation occurred while we were down
+        Set<TopicPartition> committedPartitions = topicPartitionOffsets.entrySet().stream()
+                .filter(e -> !isUncommitted(e.getValue()))
+                .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
-
-        if (committedPartitions.isEmpty()) {
-            return;
-        }
-
-        Map<TopicPartition, Long> beginningOffsets = consumer.beginningOffsets(committedPartitions);
-        for (TopicPartition tp : committedPartitions) {
-            long earliestOffset = beginningOffsets.getOrDefault(tp, 0L);
-            if (earliestOffset > 0) {
-                log.info("Startup truncation check for {}: committed={}, earliest={}",
-                        tp, topicPartitionOffsets.get(tp), earliestOffset);
-                truncationDetector.checkForTruncation(tp, earliestOffset);
+        if (!committedPartitions.isEmpty()) {
+            try {
+                Map<TopicPartition, Long> earliestOffsets = consumer.beginningOffsets(committedPartitions);
+                for (TopicPartition tp : committedPartitions) {
+                    long earliest = earliestOffsets.getOrDefault(tp, 0L);
+                    log.info("Startup truncation check for {}: committed={}, earliest={}",
+                            tp, topicPartitionOffsets.get(tp), earliest);
+                    truncationDetector.checkForTruncation(tp, earliest);
+                }
+            } catch (LogTruncationException lte) {
+                throw lte; // fail-fast
+            } catch (Exception ex) {
+                log.warn("Startup truncation check skipped: {}", ex.getMessage());
             }
         }
     }
 
-    // visible for testing 
+    // visible for testing
     SourceRecord convertRecord(ConsumerRecord<byte[], byte[]> record) {
         String targetTopic = formatRemoteTopic(record.topic());
         Headers headers = convertHeaders(record);
