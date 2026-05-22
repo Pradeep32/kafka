@@ -42,43 +42,47 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Build enhanced MirrorMaker 2 jar
-        run: ./gradlew :connect:mirror:jar -x test --no-daemon
-
-      - name: Merge enhanced MM2 classes into original connect-mirror JAR
+      - name: Compile enhanced classes against Kafka 4.0.0 APIs
         run: |
-          # Extract original JAR path from the Kafka image
-          ORIGINAL_JAR=$(docker run --rm --entrypoint find apache/kafka:4.0.0 \
-            /opt/kafka/libs -name 'connect-mirror-4*.jar' -not -name '*test*' -not -name '*sources*' -not -name '*client*' | head -1 | tr -d '\r')
-          echo "Original JAR path: $ORIGINAL_JAR"
-
-          # Copy original JAR out of the image
+          # Extract 4.0.0 JARs from the Kafka image for the compile classpath
           CONTAINER=$(docker create apache/kafka:4.0.0)
-          docker cp "$CONTAINER:$ORIGINAL_JAR" /tmp/original-connect-mirror.jar
+          mkdir -p /tmp/kafka-libs
+          docker cp "$CONTAINER:/opt/kafka/libs/." /tmp/kafka-libs/
           docker rm "$CONTAINER"
-          echo "Original JAR: $(stat -c%s /tmp/original-connect-mirror.jar) bytes"
 
-          # Extract ONLY our enhanced classes from the built JAR (not all 4.4.0-SNAPSHOT classes)
-          ENHANCED_JAR=$(ls connect/mirror/build/libs/connect-mirror-*.jar | head -1)
-          mkdir -p /tmp/merge-classes
-          cd /tmp/merge-classes
-          # Extract only the specific classes we modified/added
-          for cls in TruncationDetector TopicResetHandler LogTruncationException MirrorSourceTask MirrorSourceLegacyMetrics; do
-            jar xf "$GITHUB_WORKSPACE/$ENHANCED_JAR" "org/apache/kafka/connect/mirror/${cls}.class" "org/apache/kafka/connect/mirror/${cls}\$*.class" 2>/dev/null || true
-          done
-          echo "Enhanced classes to merge:"
-          find . -name '*.class' | sort
+          # Find the original connect-mirror JAR (we'll merge our classes into it)
+          ORIGINAL_JAR=$(ls /tmp/kafka-libs/connect-mirror-4*.jar | head -1)
+          echo "Original JAR: $ORIGINAL_JAR ($(stat -c%s "$ORIGINAL_JAR") bytes)"
 
-          # Update original JAR with ONLY our enhanced classes
-          jar uf /tmp/original-connect-mirror.jar .
+          # Build classpath from all 4.0.0 JARs
+          CP=$(echo /tmp/kafka-libs/*.jar | tr ' ' ':')
+          echo "Classpath has $(echo $CP | tr ':' '\n' | wc -l) JARs"
+
+          # Compile our enhanced classes against 4.0.0 APIs
+          mkdir -p /tmp/enhanced-classes
+          javac -d /tmp/enhanced-classes -cp "$CP" \
+            -sourcepath connect/mirror/src/main/java \
+            connect/mirror/src/main/java/org/apache/kafka/connect/mirror/TruncationDetector.java \
+            connect/mirror/src/main/java/org/apache/kafka/connect/mirror/TopicResetHandler.java \
+            connect/mirror/src/main/java/org/apache/kafka/connect/mirror/LogTruncationException.java \
+            .github/EnhancedMirrorSourceTask.java
+
+          echo "Compiled classes:"
+          find /tmp/enhanced-classes -name '*.class' | sort
+
+          # Merge compiled classes into the original connect-mirror JAR
+          cp "$ORIGINAL_JAR" /tmp/merged-connect-mirror.jar
+          cd /tmp/enhanced-classes
+          jar uf /tmp/merged-connect-mirror.jar .
           cd "$GITHUB_WORKSPACE"
-          rm -rf /tmp/merge-classes
 
-          # Replace enhanced JAR with merged one
-          rm -f "$ENHANCED_JAR"
-          cp /tmp/original-connect-mirror.jar "$ENHANCED_JAR"
-          rm -f /tmp/original-connect-mirror.jar
-          echo "Merged JAR: $ENHANCED_JAR ($(stat -c%s "$ENHANCED_JAR") bytes)"
+          # Place merged JAR where the Dockerfile expects it
+          mkdir -p connect/mirror/build/libs
+          cp /tmp/merged-connect-mirror.jar connect/mirror/build/libs/
+          echo "Merged JAR: $(stat -c%s connect/mirror/build/libs/*.jar) bytes"
+
+          # Clean up
+          rm -rf /tmp/kafka-libs /tmp/enhanced-classes /tmp/merged-connect-mirror.jar
 
       - name: Build commit-log-producer image (tagged as pradeep23mishra/commit-log-producer:latest)
         run: |
