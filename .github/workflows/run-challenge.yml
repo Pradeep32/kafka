@@ -61,7 +61,6 @@ jobs:
           # Compile our enhanced classes against 4.0.0 APIs
           mkdir -p /tmp/enhanced-classes
           javac -d /tmp/enhanced-classes -cp "$CP" \
-            -sourcepath connect/mirror/src/main/java \
             connect/mirror/src/main/java/org/apache/kafka/connect/mirror/TruncationDetector.java \
             connect/mirror/src/main/java/org/apache/kafka/connect/mirror/TopicResetHandler.java \
             connect/mirror/src/main/java/org/apache/kafka/connect/mirror/LogTruncationException.java \
