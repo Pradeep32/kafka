@@ -1,24 +1,403 @@
-================================================================
-  KAFKA REPLICATION CHALLENGE — VERIFICATION OUTPUT
-  Run: https://github.com/Pradeep32/kafka/actions/runs/26412062130
-================================================================
-
   SCENARIO 1: Normal Replication Flow
-================================================================
-[PASS]  17:21:51 All 1000 messages replicated to standby cluster (expected: >=1000, got: 1000)
+============================================================
 
+[INFO]  17:20:25 Starting infrastructure...
+time="2026-05-25T17:20:25Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Network kafka_kafka-network  Creating
+ Network kafka_kafka-network  Created
+ Container primary-kafka  Creating
+ Container standby-kafka  Creating
+ Container standby-kafka  Created
+ Container primary-kafka  Created
+ Container primary-kafka  Starting
+ Container standby-kafka  Starting
+ Container standby-kafka  Started
+ Container primary-kafka  Started
+[INFO]  17:20:35 Waiting for Primary Kafka to be ready at localhost:9092...
+[INFO]  17:20:37 Primary Kafka is ready.
+[INFO]  17:20:37 Waiting for Standby Kafka to be ready at localhost:9094...
+[INFO]  17:20:39 Standby Kafka is ready.
+[INFO]  17:20:39 Creating commit-log topic...
+time="2026-05-25T17:20:39Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container primary-kafka  Running
+ Container standby-kafka  Running
+ Container init-topics  Creating
+ Container init-topics  Created
+Attaching to init-topics
+init-topics  | Creating commit-log topic on primary cluster...
+init-topics  | Created topic commit-log.
+init-topics  | Verifying topics on primary...
+init-topics  | commit-log
+init-topics  | Topic initialization complete.
+
+init-topics exited with code 0
+[INFO]  17:20:48 Starting MirrorMaker 2...
+time="2026-05-25T17:20:48Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container mirrormaker2  Creating
+ Container mirrormaker2  Created
+ Container primary-kafka  Waiting
+ Container standby-kafka  Waiting
+ Container standby-kafka  Healthy
+ Container primary-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+ Container init-topics  Waiting
+ Container init-topics  Exited
+ Container mirrormaker2  Starting
+ Container mirrormaker2  Started
+[INFO]  17:21:07 Producing 1000 messages to commit-log...
+time="2026-05-25T17:21:07Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container primary-kafka  Waiting
+ Container standby-kafka  Waiting
+ Container primary-kafka  Healthy
+ Container standby-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+2026-05-25 17:21:14.124 [main] INFO  c.k.r.producer.CommitLogProducer - Starting Commit Log Producer: count=1000, bootstrapServers=primary-kafka:9092, topic=commit-log
+2026-05-25 17:21:14.936 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 100/1000 messages. Latest offset: 99, partition: 0
+2026-05-25 17:21:15.161 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 200/1000 messages. Latest offset: 199, partition: 0
+2026-05-25 17:21:15.359 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 300/1000 messages. Latest offset: 299, partition: 0
+2026-05-25 17:21:15.536 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 400/1000 messages. Latest offset: 399, partition: 0
+2026-05-25 17:21:15.699 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 500/1000 messages. Latest offset: 499, partition: 0
+2026-05-25 17:21:15.888 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 600/1000 messages. Latest offset: 599, partition: 0
+2026-05-25 17:21:16.064 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 700/1000 messages. Latest offset: 699, partition: 0
+2026-05-25 17:21:16.228 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 800/1000 messages. Latest offset: 799, partition: 0
+2026-05-25 17:21:16.364 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 900/1000 messages. Latest offset: 899, partition: 0
+2026-05-25 17:21:16.519 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 1000/1000 messages. Latest offset: 999, partition: 0
+2026-05-25 17:21:16.520 [main] INFO  c.k.r.producer.CommitLogProducer - Successfully produced all 1000 messages to topic 'commit-log'
+[INFO]  17:21:16 Waiting 30 seconds for replication to complete...
+[INFO]  17:21:51 Primary cluster (commit-log): 1000 messages
+[INFO]  17:21:51 Standby cluster (primary.commit-log): 1000 messages
+[PASS]  17:21:51 All 1000 messages replicated to standby cluster (expected: >=1000, got: 1000)
+[INFO]  17:21:51 MirrorMaker 2 recent logs:
+time="2026-05-25T17:21:51Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+mirrormaker2  | [2026-05-25 17:21:40,264] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 7 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:41,267] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 1000 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:41,268] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 7 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:42,265] INFO refreshing topics took 6 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-25 17:21:43,255] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 1000 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:43,256] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 8 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:44,259] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 1000 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:44,260] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 8 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:45,262] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 1000 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:45,263] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 8 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:46,265] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 1000 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:46,266] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 8 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:48,260] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 1000 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:48,264] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 9 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:49,268] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 1000 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:49,269] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 9 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:50,275] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 1000 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:50,277] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 9 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:51,280] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 1000 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:21:51,281] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 9 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+
+============================================================
   SCENARIO 2: Log Truncation Detection (Fail-Fast)
-================================================================
+============================================================
+
+[INFO]  17:21:59 Starting infrastructure...
+time="2026-05-25T17:21:59Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Network kafka_kafka-network  Creating
+ Network kafka_kafka-network  Created
+ Container standby-kafka  Creating
+ Container primary-kafka  Creating
+ Container standby-kafka  Created
+ Container primary-kafka  Created
+ Container primary-kafka  Starting
+ Container standby-kafka  Starting
+ Container standby-kafka  Started
+ Container primary-kafka  Started
+[INFO]  17:22:09 Waiting for Primary Kafka to be ready at localhost:9092...
+[INFO]  17:22:11 Primary Kafka is ready.
+[INFO]  17:22:11 Waiting for Standby Kafka to be ready at localhost:9094...
+[INFO]  17:22:13 Standby Kafka is ready.
+[INFO]  17:22:13 Creating commit-log topic with 60s retention...
+time="2026-05-25T17:22:13Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container primary-kafka  Running
+ Container standby-kafka  Running
+ Container init-topics  Creating
+ Container init-topics  Created
+Attaching to init-topics
+init-topics  | Creating commit-log topic on primary cluster...
+init-topics  | Created topic commit-log.
+init-topics  | Verifying topics on primary...
+init-topics  | commit-log
+init-topics  | Topic initialization complete.
+
+init-topics exited with code 0
+[INFO]  17:22:22 Phase 1: Producing 500 messages...
+time="2026-05-25T17:22:22Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container standby-kafka  Waiting
+ Container primary-kafka  Waiting
+ Container standby-kafka  Healthy
+ Container primary-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+2026-05-25 17:22:26.971 [main] INFO  c.k.r.producer.CommitLogProducer - Starting Commit Log Producer: count=500, bootstrapServers=primary-kafka:9092, topic=commit-log
+2026-05-25 17:22:28.637 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 100/500 messages. Latest offset: 99, partition: 0
+2026-05-25 17:22:28.789 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 200/500 messages. Latest offset: 199, partition: 0
+2026-05-25 17:22:28.923 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 300/500 messages. Latest offset: 299, partition: 0
+2026-05-25 17:22:29.037 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 400/500 messages. Latest offset: 399, partition: 0
+2026-05-25 17:22:29.160 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 500/500 messages. Latest offset: 499, partition: 0
+2026-05-25 17:22:29.161 [main] INFO  c.k.r.producer.CommitLogProducer - Successfully produced all 500 messages to topic 'commit-log'
+[INFO]  17:22:29 Starting MirrorMaker 2 to replicate initial batch...
+time="2026-05-25T17:22:29Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container mirrormaker2  Creating
+ Container mirrormaker2  Created
+ Container primary-kafka  Waiting
+ Container standby-kafka  Waiting
+ Container standby-kafka  Healthy
+ Container primary-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+ Container init-topics  Waiting
+ Container init-topics  Exited
+ Container mirrormaker2  Starting
+ Container mirrormaker2  Started
+[INFO]  17:23:06 Phase 1 replication: 500 messages on standby
+[INFO]  17:23:06 Stopping MirrorMaker 2...
+time="2026-05-25T17:23:06Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container mirrormaker2  Stopping
+ Container mirrormaker2  Stopped
+[INFO]  17:23:18 Phase 2: Waiting 90 seconds for log retention to truncate messages...
+[INFO]  17:23:18 (retention.ms=60000, check interval=10000)
+[INFO]  17:24:50 Earliest available offset on primary after retention: 500
+[INFO]  17:24:50 Truncation confirmed: earliest offset moved from 0 to 500
+[INFO]  17:24:50 Producing 100 more messages after truncation...
+time="2026-05-25T17:24:50Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container primary-kafka  Running
+ Container standby-kafka  Running
+ Container primary-kafka  Waiting
+ Container standby-kafka  Waiting
+ Container standby-kafka  Healthy
+ Container primary-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+2026-05-25 17:24:55.506 [main] INFO  c.k.r.producer.CommitLogProducer - Starting Commit Log Producer: count=100, bootstrapServers=primary-kafka:9092, topic=commit-log
+2026-05-25 17:24:56.115 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 100/100 messages. Latest offset: 599, partition: 0
+2026-05-25 17:24:56.116 [main] INFO  c.k.r.producer.CommitLogProducer - Successfully produced all 100 messages to topic 'commit-log'
+[INFO]  17:24:56 Phase 3: Starting MirrorMaker 2 (should detect truncation)...
+time="2026-05-25T17:24:56Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container standby-kafka  Waiting
+ Container primary-kafka  Waiting
+ Container primary-kafka  Healthy
+ Container standby-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+ Container init-topics  Waiting
+ Container init-topics  Exited
+ Container mirrormaker2  Starting
+ Container mirrormaker2  Started
+[INFO]  17:25:32 Checking MirrorMaker 2 logs for truncation detection...
+[INFO]  17:25:32 MM2 container state: running
 [PASS]  17:25:32 Log truncation occurred on primary (earliest offset > 0)
 [PASS]  17:25:32 MM2 logged truncation detection (LOG TRUNCATION DETECTED or LogTruncationException)
+[INFO]  17:25:32 MirrorMaker 2 logs (last 40 lines):
+time="2026-05-25T17:25:32Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+mirrormaker2  | 	at org.apache.kafka.connect.mirror.MirrorSourceTask.start(MirrorSourceTask.java:90) ~[connect-mirror-4.0.0.jar:?]
+mirrormaker2  | 	at org.apache.kafka.connect.runtime.AbstractWorkerSourceTask.initializeAndStart(AbstractWorkerSourceTask.java:279) ~[connect-runtime-4.0.0.jar:?]
+mirrormaker2  | 	at org.apache.kafka.connect.runtime.WorkerTask.doStart(WorkerTask.java:176) ~[connect-runtime-4.0.0.jar:?]
+mirrormaker2  | 	at org.apache.kafka.connect.runtime.WorkerTask.doRun(WorkerTask.java:225) ~[connect-runtime-4.0.0.jar:?]
+mirrormaker2  | 	at org.apache.kafka.connect.runtime.WorkerTask.run(WorkerTask.java:281) ~[connect-runtime-4.0.0.jar:?]
+mirrormaker2  | 	at org.apache.kafka.connect.runtime.AbstractWorkerSourceTask.run(AbstractWorkerSourceTask.java:79) ~[connect-runtime-4.0.0.jar:?]
+mirrormaker2  | 	at org.apache.kafka.connect.runtime.isolation.Plugins.lambda$withClassLoader$1(Plugins.java:238) ~[connect-runtime-4.0.0.jar:?]
+mirrormaker2  | 	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source) ~[?:?]
+mirrormaker2  | 	at java.base/java.util.concurrent.FutureTask.run(Unknown Source) ~[?:?]
+mirrormaker2  | 	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source) ~[?:?]
+mirrormaker2  | 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source) ~[?:?]
+mirrormaker2  | 	at java.base/java.lang.Thread.run(Unknown Source) [?:?]
+mirrormaker2  | [2026-05-25 17:25:08,316] INFO No ACL authorizer is configured on the source Kafka cluster, so no topic ACL syncing will take place. Consider disabling topic ACL syncing by setting sync.topic.acls.enabled to 'false'. (org.apache.kafka.connect.mirror.MirrorSourceConnector:568)
+mirrormaker2  | [2026-05-25 17:25:08,317] INFO syncing topic ACLs took 5 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-25 17:25:08,324] INFO [MirrorSourceConnector|task-0] Metrics scheduler closed (org.apache.kafka.common.metrics.Metrics:684)
+mirrormaker2  | [2026-05-25 17:25:08,324] INFO [MirrorSourceConnector|task-0] Closing reporter org.apache.kafka.common.metrics.JmxReporter (org.apache.kafka.common.metrics.Metrics:688)
+mirrormaker2  | [2026-05-25 17:25:08,324] INFO [MirrorSourceConnector|task-0] Closing reporter org.apache.kafka.common.telemetry.internals.ClientTelemetryReporter (org.apache.kafka.common.metrics.Metrics:688)
+mirrormaker2  | [2026-05-25 17:25:08,324] INFO [MirrorSourceConnector|task-0] Metrics reporters closed (org.apache.kafka.common.metrics.Metrics:694)
+mirrormaker2  | [2026-05-25 17:25:08,329] INFO [MirrorSourceConnector|task-0] App info kafka.consumer for primary->standby|MirrorSourceConnector-0|replication-consumer unregistered (org.apache.kafka.common.utils.AppInfoParser:89)
+mirrormaker2  | [2026-05-25 17:25:08,329] INFO [MirrorSourceConnector|task-0] [Producer clientId=primary->standby|MirrorSourceConnector-0|offset-syncs-source-producer] Closing the Kafka producer with timeoutMillis = 9223372036854775807 ms. (org.apache.kafka.clients.producer.KafkaProducer:1367)
+mirrormaker2  | [2026-05-25 17:25:08,333] INFO [MirrorSourceConnector|task-0] Metrics scheduler closed (org.apache.kafka.common.metrics.Metrics:684)
+mirrormaker2  | [2026-05-25 17:25:08,333] INFO [MirrorSourceConnector|task-0] Closing reporter org.apache.kafka.common.metrics.JmxReporter (org.apache.kafka.common.metrics.Metrics:688)
+mirrormaker2  | [2026-05-25 17:25:08,333] INFO [MirrorSourceConnector|task-0] Closing reporter org.apache.kafka.common.telemetry.internals.ClientTelemetryReporter (org.apache.kafka.common.metrics.Metrics:688)
+mirrormaker2  | [2026-05-25 17:25:08,334] INFO [MirrorSourceConnector|task-0] Metrics reporters closed (org.apache.kafka.common.metrics.Metrics:694)
+mirrormaker2  | [2026-05-25 17:25:08,334] INFO [MirrorSourceConnector|task-0] App info kafka.producer for primary->standby|MirrorSourceConnector-0|offset-syncs-source-producer unregistered (org.apache.kafka.common.utils.AppInfoParser:89)
+mirrormaker2  | [2026-05-25 17:25:08,334] INFO [MirrorSourceConnector|task-0] Metrics scheduler closed (org.apache.kafka.common.metrics.Metrics:684)
+mirrormaker2  | [2026-05-25 17:25:08,334] INFO syncing topic configs took 17 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-25 17:25:08,335] INFO [MirrorSourceConnector|task-0] Closing reporter org.apache.kafka.common.metrics.JmxReporter (org.apache.kafka.common.metrics.Metrics:688)
+mirrormaker2  | [2026-05-25 17:25:08,335] INFO [MirrorSourceConnector|task-0] Metrics reporters closed (org.apache.kafka.common.metrics.Metrics:694)
+mirrormaker2  | [2026-05-25 17:25:08,335] INFO [MirrorSourceConnector|task-0] Stopping task-thread-MirrorSourceConnector-0 took 18 ms. (org.apache.kafka.connect.mirror.MirrorSourceTask:117)
+mirrormaker2  | [2026-05-25 17:25:08,335] INFO [MirrorSourceConnector|task-0] [Producer clientId=connector-producer-MirrorSourceConnector-0] Closing the Kafka producer with timeoutMillis = 30000 ms. (org.apache.kafka.clients.producer.KafkaProducer:1367)
+mirrormaker2  | [2026-05-25 17:25:08,341] INFO [MirrorSourceConnector|task-0] Metrics scheduler closed (org.apache.kafka.common.metrics.Metrics:684)
+mirrormaker2  | [2026-05-25 17:25:08,341] INFO [MirrorSourceConnector|task-0] Closing reporter org.apache.kafka.common.metrics.JmxReporter (org.apache.kafka.common.metrics.Metrics:688)
+mirrormaker2  | [2026-05-25 17:25:08,341] INFO [MirrorSourceConnector|task-0] Closing reporter org.apache.kafka.common.telemetry.internals.ClientTelemetryReporter (org.apache.kafka.common.metrics.Metrics:688)
+mirrormaker2  | [2026-05-25 17:25:08,341] INFO [MirrorSourceConnector|task-0] Metrics reporters closed (org.apache.kafka.common.metrics.Metrics:694)
+mirrormaker2  | [2026-05-25 17:25:08,342] INFO [MirrorSourceConnector|task-0] App info kafka.producer for connector-producer-MirrorSourceConnector-0 unregistered (org.apache.kafka.common.utils.AppInfoParser:89)
+mirrormaker2  | [2026-05-25 17:25:18,320] INFO refreshing topics took 8 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-25 17:25:28,320] INFO refreshing topics took 7 ms (org.apache.kafka.connect.mirror.Scheduler:99)
 
+============================================================
   SCENARIO 3: Graceful Topic Reset Handling
-================================================================
-[PASS]  17:27:50 MM2 detected topic reset (TOPIC RESET DETECTED in logs)
-[PASS]  17:28:07 Replication resumed after topic reset (200 -> 500 messages)
+============================================================
 
-================================================================
+[INFO]  17:25:40 Starting infrastructure...
+time="2026-05-25T17:25:40Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Network kafka_kafka-network  Creating
+ Network kafka_kafka-network  Created
+ Container standby-kafka  Creating
+ Container primary-kafka  Creating
+ Container standby-kafka  Created
+ Container primary-kafka  Created
+ Container standby-kafka  Starting
+ Container primary-kafka  Starting
+ Container primary-kafka  Started
+ Container standby-kafka  Started
+[INFO]  17:25:50 Waiting for Primary Kafka to be ready at localhost:9092...
+[INFO]  17:25:52 Primary Kafka is ready.
+[INFO]  17:25:52 Waiting for Standby Kafka to be ready at localhost:9094...
+[INFO]  17:25:54 Standby Kafka is ready.
+[INFO]  17:25:54 Creating commit-log topic...
+time="2026-05-25T17:25:54Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container init-topics  Creating
+ Container init-topics  Created
+Attaching to init-topics
+init-topics  | Creating commit-log topic on primary cluster...
+init-topics  | Created topic commit-log.
+init-topics  | Verifying topics on primary...
+init-topics  | commit-log
+init-topics  | Topic initialization complete.
+
+init-topics exited with code 0
+[INFO]  17:26:03 Phase 1: Producing 200 initial messages...
+time="2026-05-25T17:26:03Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container primary-kafka  Running
+ Container standby-kafka  Running
+ Container standby-kafka  Waiting
+ Container primary-kafka  Waiting
+ Container standby-kafka  Healthy
+ Container primary-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+2026-05-25 17:26:08.221 [main] INFO  c.k.r.producer.CommitLogProducer - Starting Commit Log Producer: count=200, bootstrapServers=primary-kafka:9092, topic=commit-log
+2026-05-25 17:26:09.913 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 100/200 messages. Latest offset: 99, partition: 0
+2026-05-25 17:26:10.070 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 200/200 messages. Latest offset: 199, partition: 0
+2026-05-25 17:26:10.070 [main] INFO  c.k.r.producer.CommitLogProducer - Successfully produced all 200 messages to topic 'commit-log'
+[INFO]  17:26:10 Starting MirrorMaker 2 to replicate initial batch...
+time="2026-05-25T17:26:10Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container primary-kafka  Running
+ Container standby-kafka  Running
+ Container mirrormaker2  Creating
+ Container mirrormaker2  Created
+ Container primary-kafka  Waiting
+ Container standby-kafka  Waiting
+ Container primary-kafka  Healthy
+ Container standby-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+ Container init-topics  Waiting
+ Container init-topics  Exited
+ Container mirrormaker2  Starting
+ Container mirrormaker2  Started
+[INFO]  17:26:42 Pre-reset: 200 messages replicated to standby
+[INFO]  17:26:42 Stopping MirrorMaker 2...
+time="2026-05-25T17:26:42Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container mirrormaker2  Stopping
+ Container mirrormaker2  Stopped
+[INFO]  17:26:54 Deleting commit-log topic...
+time="2026-05-25T17:26:54Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+[INFO]  17:27:01 Recreating commit-log topic...
+time="2026-05-25T17:27:01Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+Created topic commit-log.
+[INFO]  17:27:08 Phase 3: Producing 300 new messages to recreated topic...
+time="2026-05-25T17:27:09Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container primary-kafka  Running
+ Container standby-kafka  Running
+ Container primary-kafka  Waiting
+ Container standby-kafka  Waiting
+ Container standby-kafka  Healthy
+ Container primary-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+2026-05-25 17:27:13.844 [main] INFO  c.k.r.producer.CommitLogProducer - Starting Commit Log Producer: count=300, bootstrapServers=primary-kafka:9092, topic=commit-log
+2026-05-25 17:27:15.225 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 100/300 messages. Latest offset: 99, partition: 0
+2026-05-25 17:27:15.496 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 200/300 messages. Latest offset: 199, partition: 0
+2026-05-25 17:27:15.703 [main] INFO  c.k.r.producer.CommitLogProducer - Produced 300/300 messages. Latest offset: 299, partition: 0
+2026-05-25 17:27:15.704 [main] INFO  c.k.r.producer.CommitLogProducer - Successfully produced all 300 messages to topic 'commit-log'
+[INFO]  17:27:15 Phase 4: Starting MirrorMaker 2 (should detect topic reset and recover)...
+time="2026-05-25T17:27:15Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container standby-kafka  Running
+ Container primary-kafka  Running
+ Container standby-kafka  Waiting
+ Container primary-kafka  Waiting
+ Container standby-kafka  Healthy
+ Container primary-kafka  Healthy
+ Container init-topics  Starting
+ Container init-topics  Started
+ Container init-topics  Waiting
+ Container init-topics  Exited
+ Container mirrormaker2  Starting
+ Container mirrormaker2  Started
+[PASS]  17:27:50 MM2 detected topic reset (TOPIC RESET DETECTED in logs)
+[INFO]  17:28:07 Post-reset: 500 total messages in standby cluster
+[PASS]  17:28:07 Replication resumed after topic reset (200 -> 500 messages)
+[INFO]  17:28:07 MirrorMaker 2 logs (last 40 lines):
+time="2026-05-25T17:28:07Z" level=warning msg="/home/runner/work/kafka/kafka/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+mirrormaker2  | [2026-05-25 17:27:44,070] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 8 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:45,074] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:45,075] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 8 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:46,079] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:46,080] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 8 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:47,320] INFO refreshing topics took 7 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-25 17:27:48,065] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:48,066] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 9 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:49,069] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:49,070] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 9 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:50,073] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:50,074] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 9 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:51,079] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:51,080] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 9 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:53,069] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:53,072] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 10 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:54,075] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:54,077] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 10 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:55,079] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:55,080] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 10 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:56,083] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:56,084] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 10 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:57,320] INFO refreshing topics took 7 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+mirrormaker2  | [2026-05-25 17:27:58,064] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:58,065] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 11 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:59,068] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:27:59,070] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 11 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:00,072] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:00,073] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 11 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:01,076] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:01,077] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 11 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:03,065] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:03,066] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 12 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:04,074] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:04,077] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 12 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:05,083] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:05,089] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 12 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:06,095] INFO [MirrorSourceConnector|task-0] Suspected topic reset for commit-log-0: earliest offset is 0 but expected offset was 300 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:06,097] INFO [MirrorSourceConnector|task-0] Suspected topic reset for heartbeats-0: earliest offset is 0 but expected offset was 12 (org.apache.kafka.connect.mirror.TopicResetHandler:105)
+mirrormaker2  | [2026-05-25 17:28:07,321] INFO refreshing topics took 8 ms (org.apache.kafka.connect.mirror.Scheduler:99)
+
+============================================================
   ALL SCENARIOS COMPLETE
-================================================================
+============================================================
+
+
   Assertions: 5 passed, 0 failed
+
 [PASS]  17:28:18 ALL SCENARIOS PASSED SUCCESSFULLY.
