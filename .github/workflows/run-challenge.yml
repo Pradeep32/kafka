@@ -16,6 +16,7 @@ on:
       - '.github/workflows/run-challenge.yml'
       - '.github/Dockerfile.mm2'
       - '.github/Dockerfile.producer'
+      - '.github/patches/**'
       - 'connect/mirror/src/**'
       - 'README.md'
 
