@@ -240,6 +240,35 @@ public class MirrorSourceTask extends SourceTask {
         log.info("Starting with {} previously uncommitted partitions.", topicPartitionOffsets.values().stream()
                 .filter(this::isUncommitted).count());
 
+        // Check for topic reset before seeking: if committed offset > end offset, topic was recreated
+        Set<TopicPartition> committedPartitions = topicPartitionOffsets.entrySet().stream()
+                .filter(e -> !isUncommitted(e.getValue()))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+        if (!committedPartitions.isEmpty()) {
+            try {
+                Map<TopicPartition, Long> endOffsets = consumer.endOffsets(committedPartitions);
+                Map<TopicPartition, Long> beginningOffsets = consumer.beginningOffsets(committedPartitions);
+                for (TopicPartition tp : committedPartitions) {
+                    long committedOffset = topicPartitionOffsets.get(tp);
+                    long endOffset = endOffsets.getOrDefault(tp, 0L);
+                    long earliestOffset = beginningOffsets.getOrDefault(tp, 0L);
+                    // Topic reset: committed offset is beyond current end, and earliest is 0
+                    if (committedOffset >= endOffset && earliestOffset == 0 && committedOffset > 0) {
+                        log.warn("TOPIC RESET DETECTED for {}: committed offset {} >= end offset {}. "
+                                + "Topic was likely deleted and recreated. Resubscribing from beginning.",
+                                tp, committedOffset, endOffset);
+                        topicResetHandler.resubscribeFromBeginning(consumer,
+                                Collections.singleton(tp), truncationDetector);
+                        // Update offset map to reflect reset
+                        topicPartitionOffsets.put(tp, -1L);
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("Topic reset check skipped: {}", ex.getMessage());
+            }
+        }
+
         topicPartitionOffsets.forEach((topicPartition, offset) -> {
             if (isUncommitted(offset)) {
                 log.trace("Skipping seeking offset for topicPartition: {}", topicPartition);
@@ -253,14 +282,14 @@ public class MirrorSourceTask extends SourceTask {
         });
 
         // Startup truncation check: if earliest offset > committed offset, truncation occurred while we were down
-        Set<TopicPartition> committedPartitions = topicPartitionOffsets.entrySet().stream()
+        Set<TopicPartition> stillCommitted = topicPartitionOffsets.entrySet().stream()
                 .filter(e -> !isUncommitted(e.getValue()))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
-        if (!committedPartitions.isEmpty()) {
+        if (!stillCommitted.isEmpty()) {
             try {
-                Map<TopicPartition, Long> earliestOffsets = consumer.beginningOffsets(committedPartitions);
-                for (TopicPartition tp : committedPartitions) {
+                Map<TopicPartition, Long> earliestOffsets = consumer.beginningOffsets(stillCommitted);
+                for (TopicPartition tp : stillCommitted) {
                     long earliest = earliestOffsets.getOrDefault(tp, 0L);
                     log.info("Startup truncation check for {}: committed={}, earliest={}",
                             tp, topicPartitionOffsets.get(tp), earliest);
