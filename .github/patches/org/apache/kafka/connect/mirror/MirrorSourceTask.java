@@ -240,27 +240,24 @@ public class MirrorSourceTask extends SourceTask {
         log.info("Starting with {} previously uncommitted partitions.", topicPartitionOffsets.values().stream()
                 .filter(this::isUncommitted).count());
 
-        // Check for topic reset before seeking: if committed offset > end offset, topic was recreated
+        // Check for topic reset before seeking: if earliest offset is 0 but we have
+        // committed offsets, the topic was likely deleted and recreated
         Set<TopicPartition> committedPartitions = topicPartitionOffsets.entrySet().stream()
                 .filter(e -> !isUncommitted(e.getValue()))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
         if (!committedPartitions.isEmpty()) {
             try {
-                Map<TopicPartition, Long> endOffsets = consumer.endOffsets(committedPartitions);
                 Map<TopicPartition, Long> beginningOffsets = consumer.beginningOffsets(committedPartitions);
                 for (TopicPartition tp : committedPartitions) {
                     long committedOffset = topicPartitionOffsets.get(tp);
-                    long endOffset = endOffsets.getOrDefault(tp, 0L);
                     long earliestOffset = beginningOffsets.getOrDefault(tp, 0L);
-                    // Topic reset: committed offset is beyond current end, and earliest is 0
-                    if (committedOffset >= endOffset && earliestOffset == 0 && committedOffset > 0) {
-                        log.warn("TOPIC RESET DETECTED for {}: committed offset {} >= end offset {}. "
+                    if (topicResetHandler.isTopicReset(tp, earliestOffset, committedOffset + 1)) {
+                        log.warn("TOPIC RESET DETECTED for {}: committed offset={}, earliest={}. "
                                 + "Topic was likely deleted and recreated. Resubscribing from beginning.",
-                                tp, committedOffset, endOffset);
+                                tp, committedOffset, earliestOffset);
                         topicResetHandler.resubscribeFromBeginning(consumer,
                                 Collections.singleton(tp), truncationDetector);
-                        // Update offset map to reflect reset
                         topicPartitionOffsets.put(tp, -1L);
                     }
                 }
