@@ -66,24 +66,24 @@ The script validates these scenarios:
 
 The script was executed via GitHub Actions on an `ubuntu-latest` runner (Docker preinstalled).
 
-**Run URL**: [GitHub Actions Run #26108279484](https://github.com/Pradeep32/kafka/actions/runs/26108279484)
+**Run URL**: [GitHub Actions Run #26412062130](https://github.com/Pradeep32/kafka/actions/runs/26412062130)
 
 **Results**:
 
 | Scenario | Status | Details |
 |----------|--------|---------|
 | Scenario 1: Normal Replication | ✅ PASSED | 1000/1000 messages replicated to standby |
-| Scenario 2: Truncation Detection | ✅ PASSED | Truncation detected at startup via earliest offset check, MM2 fails fast |
-| Scenario 3: Topic Reset Handling | ✅ PASSED | Topic reset detected via consumer position check, replication resumes from beginning |
+| Scenario 2: Truncation Detection | ✅ PASSED | Truncation detected at startup via earliest offset check, MM2 fails fast with LogTruncationException |
+| Scenario 3: Topic Reset Handling | ✅ PASSED | Topic reset detected in initializeConsumer via isTopicReset check, replication resumes from beginning (200→500) |
 
 **Key output**:
 
 ```text
-[PASS]  15:48:20 All 1000 messages replicated to standby cluster (expected: >=1000, got: 1000)
-[PASS]  15:50:30 Log truncation occurred on primary (earliest offset > 0)
-[PASS]  15:51:12 MM2 logged truncation detection (LOG TRUNCATION DETECTED or LogTruncationException)
-[PASS]  15:53:17 MM2 detected topic reset (TOPIC RESET DETECTED in logs)
-[PASS]  15:53:35 Replication resumed after topic reset (200 -> 300 messages)
+[PASS]  17:21:51 All 1000 messages replicated to standby cluster (expected: >=1000, got: 1000)
+[PASS]  17:25:32 Log truncation occurred on primary (earliest offset > 0)
+[PASS]  17:25:32 MM2 logged truncation detection (LOG TRUNCATION DETECTED or LogTruncationException)
+[PASS]  17:27:50 MM2 detected topic reset (TOPIC RESET DETECTED in logs)
+[PASS]  17:28:07 Replication resumed after topic reset (200 -> 500 messages)
 ============================================================
   ALL SCENARIOS COMPLETE
   Assertions: 5 passed, 0 failed
@@ -101,7 +101,7 @@ bash scripts/run_challenge.sh
 Or trigger the GitHub Actions workflow:
 
 ```bash
-gh workflow run run-challenge.yml --ref enhanced-mm2-v2
+gh workflow run run-challenge.yml --ref pr-1
 ```
 
 You need to have [Java](http://www.oracle.com/technetwork/java/javase/downloads/index.html) installed.
