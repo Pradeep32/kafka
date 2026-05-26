@@ -92,19 +92,28 @@ public class TopicResetHandler {
 
     /**
      * Detects topic recreation by checking if the earliest offset has reset to 0
-     * while we expected a higher offset.
+     * while we expected a higher offset, AND the topic actually has data (end > 0).
+     *
+     * If earliest=0 but end=0 (topic is empty), this could be extreme truncation
+     * where all segments were deleted. In that case we return false so the caller
+     * can treat it as truncation (fail-fast) rather than silently resetting.
      *
      * @param tp              the topic partition
      * @param earliestOffset  current earliest offset from the broker
      * @param expectedOffset  the offset we expected to consume next
+     * @param endOffset       current end offset from the broker
      * @return true if a topic reset is suspected
      */
-    public boolean isTopicReset(TopicPartition tp, long earliestOffset, long expectedOffset) {
-        // If earliest offset is 0 and we expected something higher, topic was likely recreated
-        if (earliestOffset == 0 && expectedOffset > 0) {
-            log.info("Suspected topic reset for {}: earliest offset is 0 but expected offset was {}",
-                    tp, expectedOffset);
+    public boolean isTopicReset(TopicPartition tp, long earliestOffset, long expectedOffset, long endOffset) {
+        if (earliestOffset == 0 && expectedOffset > 0 && endOffset > 0) {
+            log.info("Suspected topic reset for {}: earliest offset is 0, end offset is {}, but expected offset was {}",
+                    tp, endOffset, expectedOffset);
             return true;
+        }
+        if (earliestOffset == 0 && expectedOffset > 0 && endOffset == 0) {
+            log.warn("Ambiguous state for {}: earliest=0, end=0, expected={}. "
+                    + "Topic may be empty after extreme truncation — NOT treating as reset.",
+                    tp, expectedOffset);
         }
         return false;
     }

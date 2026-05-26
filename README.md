@@ -92,6 +92,27 @@ The script was executed via GitHub Actions on an `ubuntu-latest` runner (Docker 
 
 Full output log: [`docs/images/run_challenge_output.log`](docs/images/run_challenge_output.log)
 
+### Feedback Response & Robustness Improvements
+
+The following improvements were made in response to code review feedback:
+
+| Feedback | Fix Applied |
+|----------|-------------|
+| **Cold state misclassification**: `getExpectedOffset()` returns -1 until first batch, causing fall-through to topic reset for real truncation | Added `committedOffset > 0` guard in `initializeConsumer()` — only runs topic reset check when committed offsets exist |
+| **Truncation vs reset ambiguity**: If all segments are deleted (extreme truncation), `earliest=0` looks like a topic reset | `isTopicReset()` now requires `endOffset > 0` — empty topics (end=0) are NOT treated as reset, avoiding silent data loss |
+| **Offset store not cleared**: `TopicResetHandler` only clears in-memory state, not Connect's offset store | Documented natural recovery: post-reset records from offset 0 are committed via `commitRecord()`, updating the offset store. On restart, `initializeConsumer()` re-detects reset if crash occurred before first commit |
+| **Expected offsets not seeded on startup**: `getExpectedOffset()` returns -1 until first poll | `initializeConsumer()` seeds `truncationDetector.updateExpectedOffset()` for all committed partitions |
+| **JAR merge fragility**: `jar uf` into stock JAR is error-prone | Build step extracts Kafka 4.0.0 JARs from Docker image, compiles only enhanced classes against them, and merges into a copy of the original JAR |
+
+**Detection decision matrix in `initializeConsumer()`:**
+
+| earliest | end | committed | Action |
+|----------|-----|-----------|--------|
+| > 0, ≥ expected | any | > 0 | **Truncation** → `LogTruncationException` (fail-fast) |
+| = 0 | > 0 | > 0 | **Topic reset** → seek to beginning, log `TOPIC RESET DETECTED` |
+| = 0 | = 0 | > 0 | **Ambiguous** → NOT treated as reset (could be extreme truncation) |
+| any | any | ≤ 0 | **Cold start** → skip checks, use `auto.offset.reset=earliest` |
+
 To re-run verification:
 
 ```bash

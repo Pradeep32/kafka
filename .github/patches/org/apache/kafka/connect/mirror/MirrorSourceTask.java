@@ -185,9 +185,9 @@ public class MirrorSourceTask extends SourceTask {
                 Map<TopicPartition, Long> endOffsets =
                         consumer.endOffsets(Collections.singleton(tp));
                 long end = endOffsets.getOrDefault(tp, 0L);
-                if (topicResetHandler.isTopicReset(tp, earliest, expected) && end < expected) {
-                    log.warn("TOPIC RESET DETECTED for {}: earliest=0, end={}, expected={}. "
-                            + "Resubscribing from beginning.", tp, end, expected);
+                if (topicResetHandler.isTopicReset(tp, earliest, expected, end)) {
+                    log.warn("TOPIC RESET DETECTED for {}: earliest={}, end={}, expected={}. "
+                            + "Resubscribing from beginning.", tp, earliest, end, expected);
                     topicResetHandler.resubscribeFromBeginning(consumer,
                             Collections.singleton(tp), truncationDetector);
                 }
@@ -240,22 +240,30 @@ public class MirrorSourceTask extends SourceTask {
         log.info("Starting with {} previously uncommitted partitions.", topicPartitionOffsets.values().stream()
                 .filter(this::isUncommitted).count());
 
-        // Check for topic reset before seeking: if earliest offset is 0 but we have
-        // committed offsets, the topic was likely deleted and recreated
+        // Check for topic reset before seeking: if earliest offset is 0, end > 0,
+        // but we have committed offsets > 0, the topic was likely deleted and recreated.
+        // Cold-state guard: only check when committedOffset > 0 (not -1 or 0 from cold start).
+        // Offset store note: after reset, the next poll() returns records from offset 0.
+        // When those records are committed via commitRecord(), the offset store is naturally
+        // updated with the new offsets. On subsequent restarts, loadOffsets() returns the
+        // correct post-reset offsets. The only gap is if MM2 crashes before the first
+        // post-reset commit — in that case, this check runs again on restart.
         Set<TopicPartition> committedPartitions = topicPartitionOffsets.entrySet().stream()
-                .filter(e -> !isUncommitted(e.getValue()))
+                .filter(e -> !isUncommitted(e.getValue()) && e.getValue() > 0)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
         if (!committedPartitions.isEmpty()) {
             try {
                 Map<TopicPartition, Long> beginningOffsets = consumer.beginningOffsets(committedPartitions);
+                Map<TopicPartition, Long> endOffsets = consumer.endOffsets(committedPartitions);
                 for (TopicPartition tp : committedPartitions) {
                     long committedOffset = topicPartitionOffsets.get(tp);
                     long earliestOffset = beginningOffsets.getOrDefault(tp, 0L);
-                    if (topicResetHandler.isTopicReset(tp, earliestOffset, committedOffset + 1)) {
-                        log.warn("TOPIC RESET DETECTED for {}: committed offset={}, earliest={}. "
+                    long endOffset = endOffsets.getOrDefault(tp, 0L);
+                    if (topicResetHandler.isTopicReset(tp, earliestOffset, committedOffset + 1, endOffset)) {
+                        log.warn("TOPIC RESET DETECTED for {}: committed offset={}, earliest={}, end={}. "
                                 + "Topic was likely deleted and recreated. Resubscribing from beginning.",
-                                tp, committedOffset, earliestOffset);
+                                tp, committedOffset, earliestOffset, endOffset);
                         topicResetHandler.resubscribeFromBeginning(consumer,
                                 Collections.singleton(tp), truncationDetector);
                         topicPartitionOffsets.put(tp, -1L);
