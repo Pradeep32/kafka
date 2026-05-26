@@ -66,7 +66,7 @@ The script validates these scenarios:
 
 The script was executed via GitHub Actions on an `ubuntu-latest` runner (Docker preinstalled).
 
-**Run URL**: [GitHub Actions Run #26412062130](https://github.com/Pradeep32/kafka/actions/runs/26412062130)
+**Run URL**: [GitHub Actions Run #26455432290](https://github.com/Pradeep32/kafka/actions/runs/26455432290)
 
 **Results**:
 
@@ -74,20 +74,20 @@ The script was executed via GitHub Actions on an `ubuntu-latest` runner (Docker 
 |----------|--------|---------|
 | Scenario 1: Normal Replication | ✅ PASSED | 1000/1000 messages replicated to standby |
 | Scenario 2: Truncation Detection | ✅ PASSED | Truncation detected at startup via earliest offset check, MM2 fails fast with LogTruncationException |
-| Scenario 3: Topic Reset Handling | ✅ PASSED | Topic reset detected in initializeConsumer via isTopicReset check, replication resumes from beginning (200→500) |
+| Scenario 3: Topic Reset Handling | ✅ PASSED | Topic reset detected via isTopicReset check (earliest=0, end>0, expected>0), replication resumes from beginning (2600→11300) |
 
 **Key output**:
 
 ```text
-[PASS]  17:21:51 All 1000 messages replicated to standby cluster (expected: >=1000, got: 1000)
-[PASS]  17:25:32 Log truncation occurred on primary (earliest offset > 0)
-[PASS]  17:25:32 MM2 logged truncation detection (LOG TRUNCATION DETECTED or LogTruncationException)
-[PASS]  17:27:50 MM2 detected topic reset (TOPIC RESET DETECTED in logs)
-[PASS]  17:28:07 Replication resumed after topic reset (200 -> 500 messages)
+[PASS]  14:46:52 All 1000 messages replicated to standby cluster (expected: >=1000, got: 28000)
+[PASS]  14:50:32 Log truncation occurred on primary (earliest offset > 0)
+[PASS]  14:50:32 MM2 logged truncation detection (LOG TRUNCATION DETECTED or LogTruncationException)
+[PASS]  14:52:49 MM2 detected topic reset (TOPIC RESET DETECTED in logs)
+[PASS]  14:53:06 Replication resumed after topic reset (2600 -> 11300 messages)
 ============================================================
   ALL SCENARIOS COMPLETE
   Assertions: 5 passed, 0 failed
-[PASS]  ALL SCENARIOS PASSED SUCCESSFULLY.
+[PASS]  14:53:17 ALL SCENARIOS PASSED SUCCESSFULLY.
 ```
 
 Full output log: [`docs/images/run_challenge_output.log`](docs/images/run_challenge_output.log)
